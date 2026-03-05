@@ -1,2 +1,4 @@
 # CS330-2026-01-Group07
-Ethan Horton
+
+Dylan Miller
+
