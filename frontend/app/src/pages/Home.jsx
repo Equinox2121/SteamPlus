@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
+import './Login.css';
 
 function Home() {
     const [user, setUser] = useState(null);
@@ -71,7 +72,8 @@ function Home() {
     };
 
     return (
-        <div style={{ padding: '20px' }}>
+        <div className="login-container">
+            <div style={{ padding: '20px', width: '100%', maxWidth: '1000px' }}>
             {loading ? (
                 <p>Loading...</p>
             ) : user ? (
@@ -122,15 +124,7 @@ function Home() {
 
                     <button
                         onClick={logout}
-                        style={{
-                            padding: "12px 20px",
-                            fontSize: "18px",
-                            cursor: "pointer",
-                            borderRadius: "6px",
-                            backgroundColor: "#171a21",
-                            color: "white",
-                            border: "none"
-                        }}
+                        className="account-btn"
                     >
                         Logout
                     </button>
@@ -141,6 +135,7 @@ function Home() {
                     <p>You are not logged in.</p>
                 </>
             )}
+            </div>
         </div>
     );
 }
