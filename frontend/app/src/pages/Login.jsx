@@ -1,5 +1,7 @@
 import React, {useEffect, useState} from 'react';
 import { Navigate } from 'react-router-dom';
+import './Login.css';
+import logo from '../assets/SteamPlus Logo.png';
 
 function Login() {
 
@@ -28,22 +30,23 @@ function Login() {
     }, []);
 
     return (
-        <div style={{ padding: '20px' }}>
-            <h2>Login Page</h2>
-            {user ? (
-                <Navigate to="/home" replace />
-            ) : (
-                <a
-                    href="http://localhost:5000/auth/steam"
-                    style={{ display: "inline-block" }}
-                >
-                    <img
-                        src="https://community.fastly.steamstatic.com/public/shared/images/signinthroughsteam/sits_landing.png"
-                        alt="Sign in through Steam"
-                        style={{ height: "48px" }}
-                    />
-                </a>
-            )}
+        <div className="login-container">
+            <h1>Welcome to SteamPlus!</h1>
+            
+            <div className="login-content">
+                <div className="login-buttons">
+                    <a href="http://localhost:5000/auth/steam" className="steam-btn">
+                        Sign in with Steam
+                    </a>
+                    <button className="account-btn">Create an account</button>
+                    <hr style={{width: '100%', border: '0.5px solid gray'}} />
+                    <button className="account-btn">Contact Us 📞</button>
+                </div>
+
+                <div className="login-logo">
+                    <img src={logo} alt="SteamPlus Logo" className="logo-img" />
+                </div>
+            </div>
         </div>
     );
 }

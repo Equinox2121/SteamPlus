@@ -3,14 +3,13 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 // CRITICAL: Import your Home component file
 import Home from './pages/Home';
-import Login from './pages/Login';
+import Login from './pages/login';
 
 function App() {
     return (
         <Router>
-            <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                <h1>CS330 Project Baseline</h1>
-
+            <div >
+                
                 {/* Route Definitions */}
                 <Routes>
                     <Route path="/" element={<Navigate to="/login" replace />} />
