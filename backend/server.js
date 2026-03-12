@@ -38,7 +38,10 @@ app.get("/user", (req, res) => {
             user.username ||
             user.id ||
             "Steam User";
-        res.json({ loggedIn: true, username });
+        const avatar = (user.photos && user.photos[2] && user.photos[2].value) ||
+            (user._json && (user._json.avatarfull || user._json.avatarmedium || user._json.avatar)) ||
+            null;
+        res.json({ loggedIn: true, username, avatar });
     } else {
         res.json({ loggedIn: false });
     }
