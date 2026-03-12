@@ -17,7 +17,7 @@ function Home() {
             .then(res => res.json())
             .then(data => {
                 if (data.loggedIn) {
-                    setUser(data.username);
+                    setUser({ username: data.username, avatar: data.avatar || null });
                 } else {
                     setUser(null);
                 }
@@ -78,7 +78,17 @@ function Home() {
                 <p>Loading...</p>
             ) : user ? (
                 <>
-                    <h2>Welcome, {user}!</h2>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
+                        {user && user.avatar ? (
+                            <img
+                                src={user.avatar}
+                                alt={`${user.username}'s avatar`}
+                                style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover' }}
+                                onError={(e) => { e.currentTarget.style.visibility = 'hidden'; }}
+                            />
+                        ) : null}
+                        <h2 style={{ margin: 0 }}>Welcome, {user ? user.username : ''}!</h2>
+                    </div>
 
                     <h3 style={{ marginTop: '24px' }}>Your Steam Library</h3>
                     {gamesLoading ? (
