@@ -1,3 +1,4 @@
 .env
+.idea
 cmds.txt
 backend/config/DigiCertGlobalRootG2.crt.pem
