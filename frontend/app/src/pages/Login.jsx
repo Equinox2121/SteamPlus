@@ -9,7 +9,7 @@ function Login() {
 
 
     const fetchUser = () => {
-        fetch("http://localhost:5000/user", { credentials: "include" })
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, { credentials: "include" })
             .then(res => res.json())
             .then(data => {
                 if (data.loggedIn) {
@@ -35,7 +35,7 @@ function Login() {
             
             <div className="login-content">
                 <div className="login-buttons">
-                    <a href="http://localhost:5000/auth/steam" className="steam-btn">
+                    <a href={`${import.meta.env.VITE_BACKEND_URL}/auth/steam`} className="steam-btn">
                         Sign in with Steam
                     </a>
                     <button className="account-btn">Create an account</button>

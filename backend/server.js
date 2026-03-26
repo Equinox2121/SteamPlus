@@ -1,22 +1,62 @@
 const express = require("express");
+const path = require("path");
 const session = require("express-session");
 const passport = require("passport");
 const SteamStrategy = require("passport-steam").Strategy;
 const cors = require("cors");
 const https = require("https");
 
-//Backend Host will be port 5000
-
 const app = express();
-const STEAM_API_KEY = "CAA4749CAF9399C2F00E5B805F46349B"; //our steam key under domain localhost
+const envPath = path.join(__dirname, "..", ".env");
+console.log("Loading .env from:", envPath);
+require("dotenv").config({ path: envPath });
+
+console.log("current environment: ", {
+    BACKEND_URL: process.env.BACKEND_URL,
+    FRONTEND_URL: process.env.FRONTEND_URL,
+    PORT: process.env.BACKEND_PORT
+});
+const STEAM_API_KEY = process.env.STEAM_API_KEY;
+const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000";
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
+console.log("Steam Strategy Config:", {
+    returnURL: `${BACKEND_URL}/auth/steam/return`,
+    realm: `${BACKEND_URL}/`,
+    apiKey: STEAM_API_KEY ? "EXISTS" : "MISSING"
+});
+
+passport.serializeUser((user, done) => done(null, user));
+passport.deserializeUser((obj, done) => done(null, obj));
+
+passport.use(new SteamStrategy({
+        returnURL: `${BACKEND_URL}/auth/steam/return`,
+        realm: `${BACKEND_URL}/`,
+        apiKey: STEAM_API_KEY
+    },
+    function(identifier, profile, done) {
+        console.log("Verified Steam identifier:", identifier);
+        return done(null, profile);
+    }
+));
+
+// Debug strategy registration
+const strategy = passport._strategies ? passport._strategies.steam : null;
+if (strategy) {
+    console.log("Strategy successfully registered.");
+} else {
+    console.warn("Strategy registration might have failed.");
+}
 
 app.use(cors({
-    origin: "http://localhost:5173",
+    origin: FRONTEND_URL,
     credentials: true
 }));
 
+const SESSION_SECRET = process.env.SESSION_SECRET;
+
 app.use(session({
-    secret: "steam-login-secret",
+    secret: SESSION_SECRET,
     resave: false,
     saveUninitialized: true,
     cookie: {
@@ -47,30 +87,21 @@ app.get("/user", (req, res) => {
     }
 });
 
-passport.serializeUser((user, done) => done(null, user));
-passport.deserializeUser((obj, done) => done(null, obj));
+//passport.serializeUser is now earlier
+//passport.deserializeUser is now earlier
+//passport.use is now earlier
 
-passport.use(new SteamStrategy({
-        returnURL: "http://localhost:5000/auth/steam/return",
-        realm: "http://localhost:5000/",
-        apiKey: STEAM_API_KEY
-    },
-    function(identifier, profile, done) {
-        return done(null, profile);
-    }
-));
-
-
-app.get("/auth/steam",
-    passport.authenticate("steam", { failureRedirect: "/" })
-);
+app.get("/auth/steam", (req, res, next) => {
+    console.log("AUTHENTICATING STEAM");
+    passport.authenticate("steam", { failureRedirect: "/" })(req, res, next);
+});
 
 app.get("/auth/steam/return",
     passport.authenticate("steam", { failureRedirect: "/login" }),
     (req, res) => {
         console.log(req.user); //this is what user logged is compiled of
 
-        res.redirect("http://localhost:5173/home");
+        res.redirect(`${FRONTEND_URL}/home`);
     }
 );
 
@@ -130,7 +161,8 @@ app.get("/", (req, res) => {
     res.send("running");
 });
 
-//look for port 5000 requests
-app.listen(5000, () => {
-    console.log("running on port 5000");
+//look for port requests
+const PORT = process.env.BACKEND_PORT || 5000;
+app.listen(PORT, () => {
+    console.log(`running on port ${PORT}`);
 });

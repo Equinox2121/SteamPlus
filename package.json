@@ -1,0 +1,21 @@
+{
+  "name": "cs330-2026-01-group07",
+  "version": "1.0.0",
+  "description": "Ethan Horton  \r Yigit Arslan  \r Devon Staley  \r Maddox Schultz  \r John Guzman-Robles  \r Dylan Miller",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07/issues"
+  },
+  "homepage": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07#readme"
+}

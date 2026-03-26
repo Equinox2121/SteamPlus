@@ -13,7 +13,7 @@ function Home() {
     const navigate = useNavigate();
 
     const fetchUser = () => {
-        fetch('http://localhost:5000/user', { credentials: 'include' })
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data.loggedIn) {
@@ -33,7 +33,7 @@ function Home() {
     const fetchLibrary = () => {
         setGamesLoading(true);
         setGamesError("");
-        fetch('http://localhost:5000/steam/library', { credentials: 'include' })
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/library`, { credentials: 'include' })
             .then(res => {
                 if (!res.ok) throw new Error('library failure');
                 return res.json();
@@ -60,7 +60,7 @@ function Home() {
 
     const logout = async () => {
         try {
-            await fetch('http://localhost:5000/logout', {
+            await fetch(`${import.meta.env.VITE_BACKEND_URL}/logout`, {
                 method: 'POST',
                 credentials: 'include'
             });
