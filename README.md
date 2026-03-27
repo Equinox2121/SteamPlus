@@ -2,16 +2,16 @@
 
 SteamPlus is a web application that expands Steam's native web functionality in many ways.
 
-<img src="frontend/app/src/assets/SteamPlus%20Logo.png" alt="SteamPlus Logo" width="50%" />
+<img src="frontend/app/src/assets/SteamPlus%20Logo.png" alt="SteamPlus Logo" width="30%" />
 
 ## Group 07
 
-Ethan Horton  
-Yigit Arslan  
-Devon Staley  
-Maddox Schultz  
-John Guzman-Robles  
-Dylan Miller  
+* Ethan Horton  
+* Yigit Arslan  
+* Devon Staley  
+* Maddox Schultz  
+* John Guzman-Robles  
+* Dylan Miller  
 
 ## Installation Guide for Development
 
