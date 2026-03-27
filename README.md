@@ -2,7 +2,7 @@
 
 SteamPlus is a web application that expands Steam's native web functionality in many ways.
 
-![SteamPlus Logo](frontend/app/src/assets/SteamPlus%20Logo.png)
+<img src="frontend/app/src/assets/SteamPlus%20Logo.png" alt="SteamPlus Logo" width="50%" />
 
 ## Group 07
 
