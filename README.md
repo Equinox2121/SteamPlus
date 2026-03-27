@@ -15,6 +15,10 @@ SteamPlus is a web application that expands Steam's native web functionality in 
 
 ## Installation Guide for Development
 
+### Requirements
+* Install [Node.JS](https://nodejs.org/en).
+### Installation
+
 Open a terminal in the `backend` and `frontend/app` folder and run:
 
     bash npm install
