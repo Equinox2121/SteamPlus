@@ -10,6 +10,7 @@ import jwt from 'jsonwebtoken';
  * @returns {void} Calls next middleware or sends an error response if unauthorized.
  */
 const authMiddleware = (req, res, next) => {
+<<<<<<< HEAD
     // Get JWT from cookies
     const token = req.cookies.token;
     if (!token) return res.status(403).json({ error: 'Access denied' });
@@ -22,6 +23,20 @@ const authMiddleware = (req, res, next) => {
     } catch (error) {
         res.status(401).json({ error: 'Invalid token' });
     }
+=======
+  // Get JWT from cookies
+  const token = req.cookies.token;
+  if (!token) return res.status(403).json({ error: 'Access denied' });
+
+  try {
+    // Verify the JWT and attach user information to the request object
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (error) {
+    res.status(401).json({ error: 'Invalid token' });
+  }
+>>>>>>> main
 };
 
 module.exports = authMiddleware;
