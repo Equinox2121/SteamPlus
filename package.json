@@ -17,5 +17,16 @@
   "bugs": {
     "url": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07/issues"
   },
-  "homepage": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07#readme"
+  "homepage": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07#readme",
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.3.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "passport": "^0.7.0",
+    "passport-steam": "^1.0.18"
+  }
 }

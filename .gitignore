@@ -3,3 +3,4 @@
 cmds.txt
 backend/config/DigiCertGlobalRootG2.crt.pem
 backend/node_modules
+frontend/app/node_modules
