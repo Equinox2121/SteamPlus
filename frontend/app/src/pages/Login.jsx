@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import { Navigate } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
 import './Login.css';
 import logo from '../assets/SteamPlus Logo.png';
 
@@ -7,18 +7,17 @@ function Login() {
 
     const [user, setUser] = useState(null);
 
-
     const fetchUser = () => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, { credentials: "include" })
-            .then(res => res.json())
-            .then(data => {
-                if (data.loggedIn) {
-                    setUser(data.username);
-                } else {
-                    setUser(null);
-                }
-            })
-            .catch(err => console.error(err));
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/test`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+            if (data.ok) { // Template returns { ok: true, user: ... }
+                setUser(data.user.username);
+            } else {
+                setUser(null);
+            }
+        })
+        .catch(err => console.error(err));
     };
 
     useEffect(() => {
@@ -35,12 +34,20 @@ function Login() {
             
             <div className="login-content">
                 <div className="login-buttons">
-                    <a href={`${import.meta.env.VITE_BACKEND_URL}/auth/steam`} className="steam-btn">
+                    <a href={`${import.meta.env.VITE_BACKEND_URL}/auth/steam`} className="steam-login-btn">
                         Sign in with Steam
                     </a>
-                    <button className="account-btn">Create an account</button>
+
+                    <Link to="/SignIn" className="general-login-btn">
+                        Sign in
+                    </Link>
+
+                    <Link to="/Register" className="create-account-btn">
+                        Create an account
+                    </Link>
+
                     <hr style={{width: '100%', border: '0.5px solid gray'}} />
-                    <button className="account-btn">Contact Us 📞</button>
+                    <button className="contact-btn">Contact Us 📞</button>
                 </div>
 
                 <div className="login-logo">

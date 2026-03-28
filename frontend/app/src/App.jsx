@@ -3,7 +3,9 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 
 // CRITICAL: Import your Home component file
 import Home from './pages/Home';
-import Login from './pages/Login';
+import LandingPage from './pages/Login';
+import Register from './pages/Register';
+import SignIn from './pages/SignIn';
 
 function App() {
     return (
@@ -12,9 +14,11 @@ function App() {
                 
                 {/* Route Definitions */}
                 <Routes>
-                    <Route path="/" element={<Navigate to="/login" replace />} />
-                    <Route path="/login" element={<Login />} />
                     <Route path="/home" element={<Home />} />
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/Register" element={<Register />} />
+                    <Route path="/SignIn" element={<SignIn />} />
+                    
                 </Routes>
             </div>
         </Router>
