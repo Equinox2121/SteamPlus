@@ -2,7 +2,7 @@
 
 SteamPlus is a web application that expands Steam's native web functionality in many ways.
 
-<img src="frontend/app/src/assets/SteamPlus%20Logo.png" alt="SteamPlus Logo" width="30%" />
+<img src="frontend/src/assets/SteamPlus%20Logo.png" alt="SteamPlus Logo" width="30%" />
 
 ## Group 07
 
@@ -13,13 +13,11 @@ SteamPlus is a web application that expands Steam's native web functionality in 
 * John Guzman-Robles  
 * Dylan Miller  
 
-## Installation Guide for Development
-
-### Requirements
+## Requirements
 * Install [Node.JS](https://nodejs.org/en).
-### Installation
+## Local Installation
 
-Open a terminal in the `backend` and `frontend/app` folder and run:
+Open a terminal in the `backend` and `frontend` folder and run:
 
     bash npm install
 
