@@ -6,7 +6,17 @@ const SteamStrategy = require("passport-steam").Strategy;
 const cors = require("cors");
 const https = require("https");
 
+// General Login Addition
+const cookieParser = require("cookie-parser");
+const authRoutes = require("./routes/auth.js"); // Points to your auth.js template
+
 const app = express();
+
+// General Login Addition
+app.use(express.json()); 
+app.use(cookieParser());
+
+
 const envPath = path.join(__dirname, "..", ".env");
 console.log("Loading .env from:", envPath);
 require("dotenv").config({ path: envPath });
@@ -65,6 +75,13 @@ app.use(session({
     }
 }));
 
+
+// General Login Addition
+app.use("/auth", authRoutes);
+
+
+
+
 app.use(passport.initialize());
 app.use(passport.session());
 
@@ -110,6 +127,13 @@ app.post('/logout', (req, res) => {
         if (err) {
             return res.status(500).json({ error: "logout failure" }); //likely the account is already logged out
         }
+
+        // General Login Addition
+        res.clearCookie("token", {
+            httpOnly: true,
+            sameSite: 'strict',
+            secure: process.env.NODE_ENV === 'production'
+        });
 
         req.session.destroy(() => {
             res.clearCookie("connect.sid");

@@ -17,10 +17,10 @@
 // 3) JWT_SECRET must be set in .env
 
 
-import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import pool from '../config/database.js';
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const pool = require('../config/database.js');
 
 const router = express.Router();
 
@@ -101,7 +101,11 @@ router.post('/login', async (req, res) => {
       });
 
       // 7) Frontend just needs to know it worked (no token in body)
-      return res.json({ message: 'Login successful' });
+      return res.json({ 
+        ok: true, 
+        message: 'Login successful', 
+        user: { id: user.id, username: user.username } 
+      });
     }
 
     // Invalid credentials
@@ -151,4 +155,5 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out' });
 });
 
-export default router;
+// Export using CommonJS
+module.exports = router;

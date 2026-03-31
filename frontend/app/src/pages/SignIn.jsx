@@ -57,8 +57,8 @@ const Login = ({ setAuthenticated }) => {
       // Backend returns 200 + { message: 'Login successful' } on success
       if (response.status === 200) {
         setAuthenticated(true);
-        // Redirect to the app’s main page (Map). Use `/map` to skip extra redirect hops.
-        navigate('/map', { replace: true });
+        // Redirect to the app’s main page (Home). Use `/home` to skip extra redirect hops.
+        navigate('/home', { replace: true });
       } else {
         alert('Login failed. Please check your credentials.');
       }

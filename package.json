@@ -17,5 +17,11 @@
   "bugs": {
     "url": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07/issues"
   },
-  "homepage": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07#readme"
+  "homepage": "https://github.com/WVU-CS330-2026-01-Group07/CS330-2026-01-Group07#readme",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "cookie-parser": "^1.4.7",
+    "jsonwebtoken": "^9.0.3",
+    "mysql2": "^3.20.0"
+  }
 }
