@@ -83,33 +83,18 @@ app.use(session({
 }));
 
 
+
+
+app.use(passport.initialize());
+app.use(passport.session());
+
+
 // General Login Addition
 app.use("/auth", authRoutes);
 
 
 
 
-app.use(passport.initialize());
-app.use(passport.session());
-
-app.get("/user", (req, res) => {
-    if (req.isAuthenticated()) {
-        const user = req.user || {};
-        const username = //many fallbacks recommended as steam passport api is not consistent
-            user.personaname ||
-            user.displayName ||
-            (user._json && user._json.personaname) ||
-            user.username ||
-            user.id ||
-            "Steam User";
-        const avatar = (user.photos && user.photos[2] && user.photos[2].value) ||
-            (user._json && (user._json.avatarfull || user._json.avatarmedium || user._json.avatar)) ||
-            null;
-        res.json({ loggedIn: true, username, avatar });
-    } else {
-        res.json({ loggedIn: false });
-    }
-});
 
 //passport.serializeUser is now earlier
 //passport.deserializeUser is now earlier
@@ -129,25 +114,6 @@ app.get("/auth/steam/return",
     }
 );
 
-app.post('/logout', (req, res) => {
-    req.logout(function(err) {
-        if (err) {
-            return res.status(500).json({ error: "logout failure" }); //likely the account is already logged out
-        }
-
-        // General Login Addition
-        res.clearCookie("token", {
-            httpOnly: true,
-            sameSite: 'strict',
-            secure: process.env.NODE_ENV === 'production'
-        });
-
-        req.session.destroy(() => {
-            res.clearCookie("connect.sid");
-            res.json({ ok: true });
-        });
-    });
-});
 
 // return map of user games
 app.get("/steam/library", (req, res) => {

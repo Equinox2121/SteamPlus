@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import './Login.css';
 
-function Home() {
+function Home({ setAuthenticated }) {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
 
@@ -13,7 +13,7 @@ function Home() {
     const navigate = useNavigate();
 
     const fetchUser = () => {
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, { credentials: 'include' })
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/user`, { credentials: 'include' })
             .then(res => res.json())
             .then(data => {
                 if (data.loggedIn) {
@@ -60,12 +60,14 @@ function Home() {
 
     const logout = async () => {
         try {
-            await fetch(`${import.meta.env.VITE_BACKEND_URL}/logout`, {
+            await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/logout`, {
                 method: 'POST',
                 credentials: 'include'
             });
-
-            navigate("/login"); // redirect to login page
+            
+            
+            setAuthenticated(false);  //  update the state so App.jsx redirects us
+            navigate("/SignIn"); 
         } catch (e) {
             console.error(e);
         }
