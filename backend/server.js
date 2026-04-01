@@ -1,5 +1,12 @@
-const express = require("express");
 const path = require("path");
+
+
+const envPath = path.join(__dirname, "..", ".env");
+console.log("Loading .env from:", envPath);
+require("dotenv").config({ path: envPath });
+
+
+const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const SteamStrategy = require("passport-steam").Strategy;
@@ -8,6 +15,8 @@ const https = require("https");
 
 // General Login Addition
 const cookieParser = require("cookie-parser");
+// 4. STOP! Log to verify variables are alive
+console.log("DB_HOST Check:", process.env.DB_HOST);
 const authRoutes = require("./routes/auth.js"); // Points to your auth.js template
 
 const app = express();
@@ -17,9 +26,7 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-const envPath = path.join(__dirname, "..", ".env");
-console.log("Loading .env from:", envPath);
-require("dotenv").config({ path: envPath });
+
 
 console.log("current environment: ", {
     BACKEND_URL: process.env.BACKEND_URL,

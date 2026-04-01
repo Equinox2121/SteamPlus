@@ -25,7 +25,7 @@ const Login = ({ setAuthenticated }) => {
   const navigate                  = useNavigate();
 
   // Base API URL for the backend (e.g., http://localhost:5175)
-  const API_URL = import.meta.env.VITE_API_URL || '';
+  const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const LOGIN_URL = `${API_URL}/auth/login`;
 
   console.log('Sending Login Request to:', LOGIN_URL);

@@ -1,6 +1,6 @@
 // backend/authMiddleware.js TEMPLATE
 
-import jwt from 'jsonwebtoken';
+const jwt = require('jsonwebtoken'); // Changed from 'import'
 
 /**
  * Middleware to protect routes by verifying JWT in cookies.

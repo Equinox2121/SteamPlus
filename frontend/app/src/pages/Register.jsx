@@ -24,7 +24,7 @@ const Register = () => {
   const navigate = useNavigate();
 
   // Base API URL for the backend (e.g., http://localhost:5175)
-  const API_URL = import.meta.env.VITE_API_URL || ''; // Fallback for local development
+  const API_URL = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
   const REGISTER_URL = `${API_URL}/auth/register`;
 
   /**
@@ -54,7 +54,7 @@ const Register = () => {
       // Backend typically responds with 201 + { message: 'User registered successfully' }
       if (response.status === 201) {
         alert('Registration successful. Please log in.');
-        navigate('/login', { replace: true });
+        navigate('/SignIn', { replace: true });
       } else {
         alert('Registration failed. Please try again.');
       }
