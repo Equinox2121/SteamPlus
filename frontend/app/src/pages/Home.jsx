@@ -65,8 +65,7 @@ function Home({ setAuthenticated }) {
                 credentials: 'include'
             });
             
-            
-            setAuthenticated(false);  //  update the state so App.jsx redirects us
+            setAuthenticated(false); 
             navigate("/SignIn"); 
         } catch (e) {
             console.error(e);

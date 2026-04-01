@@ -1,10 +1,8 @@
 const path = require("path");
 
-
 const envPath = path.join(__dirname, "..", ".env");
 console.log("Loading .env from:", envPath);
 require("dotenv").config({ path: envPath });
-
 
 const express = require("express");
 const session = require("express-session");
@@ -13,20 +11,14 @@ const SteamStrategy = require("passport-steam").Strategy;
 const cors = require("cors");
 const https = require("https");
 
-// General Login Addition
 const cookieParser = require("cookie-parser");
-// 4. STOP! Log to verify variables are alive
-console.log("DB_HOST Check:", process.env.DB_HOST);
-const authRoutes = require("./routes/auth.js"); // Points to your auth.js template
+console.log("DB_HOST Check:", process.env.DB_HOST); // check if DB_HOST is loaded
+const authRoutes = require("./routes/auth.js"); // Connect auth routes (register, login, test, user)
 
 const app = express();
 
-// General Login Addition
 app.use(express.json()); 
 app.use(cookieParser());
-
-
-
 
 console.log("current environment: ", {
     BACKEND_URL: process.env.BACKEND_URL,
@@ -82,23 +74,11 @@ app.use(session({
     }
 }));
 
-
-
-
 app.use(passport.initialize());
 app.use(passport.session());
 
-
 // General Login Addition
 app.use("/auth", authRoutes);
-
-
-
-
-
-//passport.serializeUser is now earlier
-//passport.deserializeUser is now earlier
-//passport.use is now earlier
 
 app.get("/auth/steam", (req, res, next) => {
     console.log("AUTHENTICATING STEAM");
@@ -114,8 +94,6 @@ app.get("/auth/steam/return",
     }
 );
 
-
-// return map of user games
 app.get("/steam/library", (req, res) => {
     if (!req.isAuthenticated || !req.isAuthenticated()) {
         return res.status(401).json({ error: "no auth" });
