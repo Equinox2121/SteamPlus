@@ -21,7 +21,10 @@
     gap: 25px;
 }
 
-.steam-btn, .account-btn {
+.steam-login-btn, 
+.general-login-btn, 
+.create-account-btn,
+.contact-btn {
     background-color: #00adee;
     border: 2px solid black;
     border-radius: 8px;
@@ -32,7 +35,9 @@
     text-align: center;
 }
 
-.steam-btn:hover, .account-btn:hover {
+.steam-login-btn:hover, 
+.general-login-btn:hover, 
+.create-account-btn:hover {
     color: white;
 }
 

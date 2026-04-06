@@ -1,15 +1,24 @@
-const express = require("express");
 const path = require("path");
+
+const envPath = path.join(__dirname, "..", ".env");
+console.log("Loading .env from:", envPath);
+require("dotenv").config({ path: envPath });
+
+const express = require("express");
 const session = require("express-session");
 const passport = require("passport");
 const SteamStrategy = require("passport-steam").Strategy;
 const cors = require("cors");
 const https = require("https");
 
+const cookieParser = require("cookie-parser");
+console.log("DB_HOST Check:", process.env.DB_HOST); // check if DB_HOST is loaded
+const authRoutes = require("./routes/auth.js"); // Connect auth routes (register, login, test, user)
+
 const app = express();
-const envPath = path.join(__dirname, "..", ".env");
-console.log("Loading .env from:", envPath);
-require("dotenv").config({ path: envPath });
+
+app.use(express.json()); 
+app.use(cookieParser());
 
 console.log("current environment: ", {
     BACKEND_URL: process.env.BACKEND_URL,
@@ -68,28 +77,8 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.get("/user", (req, res) => {
-    if (req.isAuthenticated()) {
-        const user = req.user || {};
-        const username = //many fallbacks recommended as steam passport api is not consistent
-            user.personaname ||
-            user.displayName ||
-            (user._json && user._json.personaname) ||
-            user.username ||
-            user.id ||
-            "Steam User";
-        const avatar = (user.photos && user.photos[2] && user.photos[2].value) ||
-            (user._json && (user._json.avatarfull || user._json.avatarmedium || user._json.avatar)) ||
-            null;
-        res.json({ loggedIn: true, username, avatar });
-    } else {
-        res.json({ loggedIn: false });
-    }
-});
-
-//passport.serializeUser is now earlier
-//passport.deserializeUser is now earlier
-//passport.use is now earlier
+// General Login Addition
+app.use("/auth", authRoutes);
 
 app.get("/auth/steam", (req, res, next) => {
     console.log("AUTHENTICATING STEAM");
@@ -105,20 +94,6 @@ app.get("/auth/steam/return",
     }
 );
 
-app.post('/logout', (req, res) => {
-    req.logout(function(err) {
-        if (err) {
-            return res.status(500).json({ error: "logout failure" }); //likely the account is already logged out
-        }
-
-        req.session.destroy(() => {
-            res.clearCookie("connect.sid");
-            res.json({ ok: true });
-        });
-    });
-});
-
-// return map of user games
 app.get("/steam/library", (req, res) => {
     if (!req.isAuthenticated || !req.isAuthenticated()) {
         return res.status(401).json({ error: "no auth" });

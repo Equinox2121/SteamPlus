@@ -1,0 +1,94 @@
+/**
+ * Targeting the main container based on its inline style: 
+ * display: flex, flex-direction: column, maxWidth: 300px
+ */
+div[style*="display: flex"][style*="flex-direction: column"][style*="max-width: 300px"] {
+    /* Layout & Background */
+    margin: 100px auto; /* Centers the small box on the page */
+    padding: 30px;
+    background: #051923; /* Dark background to pop against your page gradient */
+    border: 2px solid #00adee;
+    border-radius: 12px;
+    box-shadow: 0 0 20px rgba(0, 173, 238, 0.4);
+    
+    /* Text Styles */
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+.login-container {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(to bottom right, #0093dd 0%, #1580ea 40%, #051923 100%);
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+}
+
+/* Heading style */
+div[style*="max-width: 300px"] h2 {
+    margin-top: 0;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+/* Form layout */
+div[style*="max-width: 300px"] form {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+/* Input Fields */
+div[style*="max-width: 300px"] input {
+    background-color: #051923;
+    border: 1px solid #00adee;
+    border-radius: 4px;
+    padding: 10px;
+    color: white;
+    font-family: 'Courier New', Courier, monospace;
+    outline: none;
+}
+
+div[style*="max-width: 300px"] input:focus {
+    border-color: white;
+    box-shadow: 0 0 8px #00adee;
+}
+
+/* The Login Button */
+div[style*="max-width: 300px"] button[type="submit"] {
+    background-color: #00adee;
+    border: 2px solid black;
+    border-radius: 8px;
+    padding: 12px;
+    color: black;
+    font-weight: bold;
+    font-family: 'Courier New', Courier, monospace;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+div[style*="max-width: 300px"] button[type="submit"]:hover {
+    background-color: white;
+    color: #0093dd;
+}
+
+/* "Don't have an account?" text and Link */
+div[style*="max-width: 300px"] p {
+    font-size: 0.85rem;
+    text-align: center;
+}
+
+div[style*="max-width: 300px"] a {
+    color: #00adee;
+    text-decoration: none;
+    font-weight: bold;
+}
+
+div[style*="max-width: 300px"] a:hover {
+    color: white;
+    text-decoration: underline;
+}

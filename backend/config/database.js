@@ -1,46 +1,33 @@
-// backend/config/database.js TEMPLATE
-import 'dotenv/config';
-import mysql from 'mysql2/promise';
-import fs    from 'fs';
-import path  from 'path';
-import { fileURLToPath } from 'url';
-import { dirname }       from 'path';
+const mysql = require('mysql2/promise');
+const fs = require('fs');
+const path = require('path');
 
-// Recreate __dirname in ESM
-const __filename = fileURLToPath(import.meta.url);
-const __dirname  = dirname(__filename);
+// FORCE loading of .env here just in case server.js is too slow
+require("dotenv").config({ path: path.join(__dirname, "../../.env") });
 
-// Path to your bundled CA cert
-const caPath = path.join(__dirname, 'DigiCertGlobalRootG2.crt.pem');
-
-// Read it once at startup
-const caCert = fs.readFileSync(caPath);
-
-console.log('Loaded CA cert from:', caPath);
-console.log('Connecting to', `${process.env.DB_HOST}:${process.env.DB_PORT}`);
+console.log("DATABASE STARTUP: Attempting to connect to host:", process.env.DB_HOST);
 
 const pool = mysql.createPool({
-  host:               process.env.DB_HOST,
-  user:               process.env.DB_USER,
-  password:           process.env.DB_PASSWORD,
-  database:           process.env.DB_NAME,
-  port:               Number(process.env.DB_PORT),
-  waitForConnections: true,
-  connectionLimit:    10,
-  queueLimit:         0,
+  host: process.env.DB_HOST,
+  user: process.env.DB_USER,
+  password: process.env.DB_PASSWORD,
+  database: process.env.DB_NAME,
+  port: Number(process.env.DB_PORT) || 3306,
   ssl: {
-    ca: caCert,                   // use the CA for TLS validation
+    ca: fs.readFileSync(path.join(__dirname, 'DigiCertGlobalRootG2.crt.pem')),
     rejectUnauthorized: true
   }
 });
 
+// Test the connection immediately
 pool.getConnection()
   .then(conn => {
-    console.log('Successfully connected to MySQL');
+    console.log('✅ SUCCESS: Connected to Azure MySQL (authdb)');
     conn.release();
   })
   .catch(err => {
-    console.error('MySQL connection failed on startup:', err);
+    console.error('❌ ERROR: Database connection failed.');
+    console.error('Check if your IP is whitelisted in Azure. Error code:', err.code);
   });
-  
-export default pool;
+
+module.exports = pool;

@@ -1,27 +1,7 @@
-// backend/auth.js TEMPLATE
-//
-// Authentication routes for Sprint 2.
-//
-// WHAT THIS FILE DOES
-// - Registers new users (hashes passwords before storing)
-// - Logs users in (verifies password, issues JWT as an HTTP-only cookie)
-// - Verifies active sessions (/auth/test) using a middleware-free, minimal check here
-// - Logs users out by clearing the cookie
-//
-// IMPORTANT BACKEND REQUIREMENTS (configured in app.js):
-// 1) cookie-parser must be enabled so we can read/write cookies:
-//      import cookieParser from 'cookie-parser';
-//      app.use(cookieParser());
-// 2) CORS must allow credentials from the frontend origin:
-//      app.use(cors({ origin: process.env.FRONTEND_URL, credentials: true }));
-// 3) JWT_SECRET must be set in .env
-
-
-import express from 'express';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import pool from '../config/database.js';
-
+const express = require('express');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
+const pool = require('../config/database.js');
 const router = express.Router();
 
 /**
@@ -101,7 +81,11 @@ router.post('/login', async (req, res) => {
       });
 
       // 7) Frontend just needs to know it worked (no token in body)
-      return res.json({ message: 'Login successful' });
+      return res.json({ 
+        ok: true, 
+        message: 'Login successful', 
+        user: { id: user.id, username: user.username } 
+      });
     }
 
     // Invalid credentials
@@ -118,22 +102,55 @@ router.post('/login', async (req, res) => {
  * @route GET /auth/test
  * @returns {JSON} { ok: true, user: { id, username } } on success; 401/403 on failure.
  */
-router.get('/test', async (req, res) => {
-  try {
-    // Read token from cookie (cookie-parser required in app.js)
-    const token = req.cookies?.token;
-    if (!token) {
-      return res.status(403).json({ error: 'Access denied' });
+router.get('/test', (req, res) => {
+  // 1. Check if Passport (Steam) session exists
+  const isSteamAuth = req.isAuthenticated && req.isAuthenticated();
+  
+  // 2. Check if JWT cookie exists
+  const token = req.cookies?.token;
+
+  if (isSteamAuth) {
+    return res.json({ ok: true, method: 'steam' });
+  }
+
+  if (token) {
+    try {
+      jwt.verify(token, process.env.JWT_SECRET);
+      return res.json({ ok: true, method: 'jwt' });
+    } catch (err) {
+      // Token expired or invalid
+    }
+  }
+
+  // 3. If neither, return 401 Unauthorized
+  return res.status(401).json({ ok: false, error: 'Not authenticated' });
+});
+
+/**
+ * Home.jsx can fetch the user's info (username, avatar) from this endpoint to display in the UI.
+ * It checks both the Steam session (via Passport) and the JWT cookie, returning user details if authenticated.
+ * If not authenticated, it returns { loggedIn: false }.
+ */
+router.get("/user", (req, res) => {
+    // 1. Check Steam (Passport)
+    if (req.isAuthenticated && req.isAuthenticated()) {
+        const user = req.user || {};
+        const username = user.personaname || user.displayName || "Steam User";
+        const avatar = user.photos?.[2]?.value || null;
+        return res.json({ loggedIn: true, username, avatar });
     }
 
-    // Verify and decode the token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    // If valid, respond with a minimal user object for the UI
-    return res.json({ ok: true, user: { id: decoded.id, username: decoded.username } });
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+    // 2. Check General (JWT)
+    const token = req.cookies?.token;
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, process.env.JWT_SECRET);
+            return res.json({ loggedIn: true, username: decoded.username, avatar: null });
+        } catch (err) {
+            // Token invalid
+        }
+    }
+    res.json({ loggedIn: false });
 });
 
 /**
@@ -142,13 +159,18 @@ router.get('/test', async (req, res) => {
  * @returns {JSON} Success message.
  */
 router.post('/logout', (req, res) => {
-  // Clear the cookie by name; mirror the same options used when setting it
-  res.clearCookie('token', {
-    httpOnly: true,
-    sameSite: 'strict',
-    secure: process.env.NODE_ENV === 'production'
-  });
-  res.json({ message: 'Logged out' });
+  // Clear JWT
+  res.clearCookie('token', { httpOnly: true, sameSite: 'strict' });
+
+  // Clear Steam Session
+  if (req.logout) {
+    req.logout(() => {
+      if (req.session) req.session.destroy();
+      res.json({ ok: true, message: 'Logged out' });
+    });
+  } else {
+    res.json({ ok: true });
+  }
 });
 
-export default router;
+module.exports = router;
