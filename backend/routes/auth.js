@@ -118,13 +118,12 @@ router.post('/complete-steam-profile', async (req, res) => {
   const email = (req.user.emails && req.user.emails[0] && req.user.emails[0].value) || null;
 
   try {
-    // Check if username already exists
+
     const [existing] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Username already taken' });
     }
 
-    // Insert new user
     const [result] = await pool.execute(
       'INSERT INTO users (username, email, steam_id) VALUES (?, ?, ?)',
       [username, email, steamId]

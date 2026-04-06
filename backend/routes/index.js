@@ -228,7 +228,7 @@ router.get("/steam/library", (req, res) => {
 });
 
 // steam game details route
-router.get("/steam/game/:appid", (req, res) => {
+router.get("/steam/game/:appid", async (req, res) => {
     const { appid } = req.params;
     if (!appid) {
         return res.status(400).json({ error: "appid is required" });
@@ -236,14 +236,31 @@ router.get("/steam/game/:appid", (req, res) => {
 
     const url = `https://store.steampowered.com/api/appdetails?appids=${appid}&cc=us`;
 
-    https.get(url, (apiRes) => {
+    https.get(url, async (apiRes) => {
+        if (apiRes.statusCode !== 200) {
+            console.error(`Steam API returned status ${apiRes.statusCode}`);
+            return res.status(502).json({ error: "Steam API error", details: `Steam returned ${apiRes.statusCode}` });
+        }
         let data = "";
         apiRes.on("data", (chunk) => (data += chunk));
-        apiRes.on("end", () => {
+        apiRes.on("end", async () => {
             try {
                 const parsed = JSON.parse(data);
                 if (parsed[appid] && parsed[appid].success) {
-                    res.json(parsed[appid].data);
+                    const gameData = parsed[appid].data;
+                    
+                    // fetch user tags from SteamSpy
+                    const spyData = await fetchSteamSpy(appid);
+                    if (spyData && spyData.tags) {
+                        // get top 15 tags by vote count
+                        const tags = Object.entries(spyData.tags)
+                            .sort((a, b) => b[1] - a[1])
+                            .slice(0, 15)
+                            .map(t => t[0]);
+                        gameData.user_tags = tags;
+                    }
+                    
+                    res.json(gameData);
                 } else {
                     res.status(404).json({ error: "game not found or success: false from steam" });
                 }
@@ -256,6 +273,140 @@ router.get("/steam/game/:appid", (req, res) => {
         console.error("api error", err);
         res.status(502).json({ error: "cant get steam" });
     });
+});
+
+// cache for game details
+const gameCache = {};
+const steamSpyCache = {};
+
+// helper to fetch from SteamSpy
+async function fetchSteamSpy(appid) {
+    if (steamSpyCache[appid]) return steamSpyCache[appid];
+
+    const url = `https://steamspy.com/api.php?request=appdetails&appid=${appid}`;
+    try {
+        const data = await new Promise((resolve, reject) => {
+            https.get(url, (apiRes) => {
+                if (apiRes.statusCode !== 200) {
+                    return resolve(null);
+                }
+                let d = "";
+                apiRes.on("data", (chunk) => (d += chunk));
+                apiRes.on("end", () => {
+                    try {
+                        resolve(JSON.parse(d));
+                    } catch (e) {
+                        resolve(null);
+                    }
+                });
+            }).on("error", reject);
+        });
+        if (data && data.tags) {
+            steamSpyCache[appid] = data;
+            return data;
+        }
+    } catch (e) {
+        console.error(`SteamSpy error for ${appid}:`, e.message);
+    }
+    return null;
+}
+
+
+router.get("/steam/recommendations/:appid", async (req, res) => {
+    const { appid } = req.params;
+    if (!appid) {
+        return res.status(400).json({ error: "appid is required" });
+    }
+
+    try {
+
+        const currentSpyData = await fetchSteamSpy(appid);
+        const currentTags = currentSpyData && currentSpyData.tags ? Object.keys(currentSpyData.tags) : [];
+        
+
+        const featuredUrl = "https://store.steampowered.com/api/featured/";
+        const categoriesUrl = "https://store.steampowered.com/api/featuredcategories/";
+        
+        const [featuredData, categoriesData] = await Promise.all([
+            new Promise((resolve, reject) => {
+                https.get(featuredUrl, (apiRes) => {
+                    if (apiRes.statusCode !== 200) {
+                        return reject(new Error(`Steam featured API returned status ${apiRes.statusCode}`));
+                    }
+                    let d = "";
+                    apiRes.on("data", (chunk) => (d += chunk));
+                    apiRes.on("end", () => {
+                        try {
+                            resolve(JSON.parse(d));
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                }).on("error", reject);
+            }),
+            new Promise((resolve, reject) => {
+                https.get(categoriesUrl, (apiRes) => {
+                    if (apiRes.statusCode !== 200) {
+                        return reject(new Error(`Steam categories API returned status ${apiRes.statusCode}`));
+                    }
+                    let d = "";
+                    apiRes.on("data", (chunk) => (d += chunk));
+                    apiRes.on("end", () => {
+                        try {
+                            resolve(JSON.parse(d));
+                        } catch (e) {
+                            reject(e);
+                        }
+                    });
+                }).on("error", reject);
+            })
+        ]);
+
+
+        const pool = (categoriesData.top_sellers?.items || [])
+            .filter(g => g && (g.id || g.appid) && (g.id || g.appid).toString() !== appid);
+
+        const uniquePool = [];
+        const seen = new Set();
+        for (const g of pool) {
+            const gid = g.id || g.appid;
+            if (gid && !seen.has(gid)) {
+                seen.add(gid);
+                uniquePool.push(g);
+            }
+            if (uniquePool.length >= 20) break;
+        }
+
+
+        const recommendations = [];
+        for (const game of uniquePool) {
+            const gameId = game.id || game.appid;
+            const spyData = await fetchSteamSpy(gameId);
+            
+            if (spyData && spyData.tags) {
+                const tags = Object.keys(spyData.tags);
+                const overlap = tags.filter(t => currentTags.includes(t));
+                
+                if (overlap.length > 0 || currentTags.length === 0) {
+                    recommendations.push({
+                        appid: gameId,
+                        name: spyData.name || game.name,
+                        header_image: `https://cdn.cloudflare.steamstatic.com/steam/apps/${gameId}/header.jpg`,
+                        price: game.final_price ? (game.final_price / 100).toFixed(2) + " " + (game.currency || "USD") : "Free",
+                        relevance: overlap.length,
+                        tags: tags.slice(0, 3)
+                    });
+                }
+            }
+        }
+
+        recommendations.sort((a, b) => b.relevance - a.relevance);
+
+        res.json({ recommendations: recommendations.slice(0, 6) });
+    } catch (e) {
+        console.error("recommendations error", e);
+        res.status(500).json({ error: "failed to get recommendations" });
+    }
 });
 
 router.get("/", (req, res) => {
