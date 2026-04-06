@@ -12,6 +12,7 @@
 
 import React, { useState } from 'react';
 import axios from 'axios';
+import './SignIn.css';
 import { useNavigate, Link } from 'react-router-dom';
 
 /**
@@ -74,6 +75,7 @@ const Login = ({ setAuthenticated }) => {
   };
 
   return (
+    <div className="login-container">
     <div style={{ display: 'flex', flexDirection: 'column', maxWidth: '300px' }}>
       <h2>Login</h2>
       <form onSubmit={handleSubmit}>
@@ -98,6 +100,7 @@ const Login = ({ setAuthenticated }) => {
       <p style={{ marginTop: '10px' }}>
         Don’t have an account? <Link to="/register">Register here</Link>
       </p>
+    </div>
     </div>
   );
 };
