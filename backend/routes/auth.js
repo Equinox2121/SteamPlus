@@ -2,77 +2,59 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database.js');
+
 const router = express.Router();
 
-/**
- * Registers a new user by hashing the password and storing user data in the database.
- * @route POST /auth/register
- * @body {string} username - Unique username for the user.
- * @body {string} password - Plaintext password (hashed before storage).
- * @returns {JSON} Success message or error details.
- */
 router.post('/register', async (req, res) => {
   const { email, username, password } = req.body;
   if (!email || !username || !password) return res.status(400).json({ error: 'email, username, and password are required' });
   try {
-    // 1) Hash the user's password with a reasonable work factor
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 2) Insert the user into the DB (UNIQUE constraints will throw on duplicates)
-    //    Change `password_hash` to `password` here if your table uses that column.
     await pool.execute(
       'INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)',
       [username, email, hashedPassword]
     );
 
-    // 3) Respond success
     res.status(201).json({ message: 'User registered successfully' });
+
   } catch (error) {
-    // Common causes:
-    // - Duplicate username (unique constraint violation)
-    // - DB connectivity issues
+
     console.error('Error during user registration:', error);
     res.status(500).json({ error: 'Failed to register user' });
   }
 });
 
-/**
- * Authenticates a user by verifying the password and sets a signed JWT in an HTTP-only cookie.
- * @route POST /auth/login
- * @body {string} username - The username.
- * @body {string} password - The plaintext password.
- * @returns {JSON} Success message or error details.
- */
+
 router.post('/login', async (req, res) => {
   const { username, password } = req.body;
 
-  // Basic input guards
   if (!username || !password) {
     return res.status(400).json({ error: 'username and password are required' });
   }
 
   try {
-    // 1) Fetch user by username
+
     const [rows] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
     const user = rows[0];
 
-    // 2) Decide which column holds the hash (supports either schema during transition)
-    //    Prefer `password_hash`; fall back to `password` if needed.
+    if (user && !user.password_hash && user.steam_id) {
+      return res.status(401).json({ error: 'Must sign in with steam' });
+    }
+
     const storedHash = user?.password_hash ?? user?.password;
 
-    // 3) Validate user exists and password matches
-    if (user && storedHash && await bcrypt.compare(password, storedHash)) {
-      // 4) Create a JWT payload with minimal claims
-      const payload = { id: user.id, username: user.username };
 
-      // 5) Sign the JWT
+    if (user && storedHash && await bcrypt.compare(password, storedHash)) {
+
+      const payload = { 
+          id: user.id, 
+          username: user.username,
+          steamid: user.steam_id 
+      };
+
       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-      // 6) Set the JWT as an HTTP-only cookie
-      //    - httpOnly: JS cannot read the cookie (XSS protection)
-      //    - sameSite: 'strict' prevents CSRF across sites during dev
-      //    - secure: only over HTTPS in production
-      //    - maxAge: 1 hour in milliseconds (align with JWT expiry)
       res.cookie('token', token, {
         httpOnly: true,
         sameSite: 'strict',
@@ -80,15 +62,9 @@ router.post('/login', async (req, res) => {
         maxAge: 60 * 60 * 1000
       });
 
-      // 7) Frontend just needs to know it worked (no token in body)
-      return res.json({ 
-        ok: true, 
-        message: 'Login successful', 
-        user: { id: user.id, username: user.username } 
-      });
+      return res.json({ message: 'Login successful' });
     }
 
-    // Invalid credentials
     res.status(401).json({ error: 'Invalid credentials' });
   } catch (error) {
     console.error('Error during login:', error);
@@ -96,80 +72,91 @@ router.post('/login', async (req, res) => {
   }
 });
 
-/**
- * Verifies the current session by validating the JWT cookie.
- * The frontend calls this on app load to determine if the user is authenticated.
- * @route GET /auth/test
- * @returns {JSON} { ok: true, user: { id, username } } on success; 401/403 on failure.
- */
-router.get('/test', (req, res) => {
-  // 1. Check if Passport (Steam) session exists
-  const isSteamAuth = req.isAuthenticated && req.isAuthenticated();
-  
-  // 2. Check if JWT cookie exists
-  const token = req.cookies?.token;
-
-  if (isSteamAuth) {
-    return res.json({ ok: true, method: 'steam' });
-  }
-
-  if (token) {
-    try {
-      jwt.verify(token, process.env.JWT_SECRET);
-      return res.json({ ok: true, method: 'jwt' });
-    } catch (err) {
-      // Token expired or invalid
-    }
-  }
-
-  // 3. If neither, return 401 Unauthorized
-  return res.status(401).json({ ok: false, error: 'Not authenticated' });
-});
-
-/**
- * Home.jsx can fetch the user's info (username, avatar) from this endpoint to display in the UI.
- * It checks both the Steam session (via Passport) and the JWT cookie, returning user details if authenticated.
- * If not authenticated, it returns { loggedIn: false }.
- */
-router.get("/user", (req, res) => {
-    // 1. Check Steam (Passport)
-    if (req.isAuthenticated && req.isAuthenticated()) {
-        const user = req.user || {};
-        const username = user.personaname || user.displayName || "Steam User";
-        const avatar = user.photos?.[2]?.value || null;
-        return res.json({ loggedIn: true, username, avatar });
-    }
-
-    // 2. Check General (JWT)
+router.get('/test', async (req, res) => {
+  try {
     const token = req.cookies?.token;
-    if (token) {
-        try {
-            const decoded = jwt.verify(token, process.env.JWT_SECRET);
-            return res.json({ loggedIn: true, username: decoded.username, avatar: null });
-        } catch (err) {
-            // Token invalid
-        }
+    if (!token) {
+      return res.status(403).json({ error: 'Access denied' });
     }
-    res.json({ loggedIn: false });
+
+    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+
+    return res.json({ 
+        ok: true, 
+        user: { 
+            id: decoded.id, 
+            username: decoded.username,
+            steamid: decoded.steamid,
+            avatar: decoded.avatar
+        } 
+    });
+  } catch (error) {
+    return res.status(401).json({ error: 'Invalid token' });
+  }
 });
 
-/**
- * Logs the user out by clearing the JWT cookie.
- * @route POST /auth/logout
- * @returns {JSON} Success message.
- */
 router.post('/logout', (req, res) => {
-  // Clear JWT
-  res.clearCookie('token', { httpOnly: true, sameSite: 'strict' });
+  res.clearCookie('token', {
+    httpOnly: true,
+    sameSite: 'strict',
+    secure: process.env.NODE_ENV === 'production'
+  });
+  res.json({ message: 'Logged out' });
+});
 
-  // Clear Steam Session
-  if (req.logout) {
-    req.logout(() => {
-      if (req.session) req.session.destroy();
-      res.json({ ok: true, message: 'Logged out' });
+router.post('/complete-steam-profile', async (req, res) => {
+  if (!req.isAuthenticated() || !req.user) {
+    return res.status(401).json({ error: 'Not authenticated with Steam' });
+  }
+  const { username } = req.body;
+  if (!username) return res.status(400).json({ error: 'Username is required' });
+
+  let steamId = req.user.id;
+  if (steamId && typeof steamId === 'string' && steamId.includes('https://steamcommunity.com/openid/id/')) {
+    steamId = steamId.split('https://steamcommunity.com/openid/id/')[1];
+  }
+  const email = (req.user.emails && req.user.emails[0] && req.user.emails[0].value) || null;
+
+  try {
+
+    const [existing] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
+    if (existing.length > 0) {
+      return res.status(400).json({ error: 'Username already taken' });
+    }
+
+    const [result] = await pool.execute(
+      'INSERT INTO users (username, email, steam_id) VALUES (?, ?, ?)',
+      [username, email, steamId]
+    );
+
+    const newUser = {
+      id: result.insertId,
+      username: username,
+      steamid: steamId
+    };
+
+    const avatar = (req.user.photos && req.user.photos[2] && req.user.photos[2].value) ||
+      (req.user._json && (req.user._json.avatarfull || req.user._json.avatarmedium || req.user._json.avatar)) ||
+      null;
+
+    const payload = {
+      id: newUser.id,
+      username: newUser.username,
+      steamid: newUser.steamid,
+      avatar: avatar
+    };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+    res.cookie('token', token, {
+      httpOnly: true,
+      sameSite: 'strict',
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: 60 * 60 * 1000
     });
-  } else {
-    res.json({ ok: true });
+
+    res.json({ message: 'Profile completed successfully', user: newUser });
+  } catch (error) {
+    console.error('Error during profile completion:', error);
+    res.status(500).json({ error: 'Failed to complete profile' });
   }
 });
 
