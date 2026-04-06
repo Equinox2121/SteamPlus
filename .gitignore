@@ -8,3 +8,4 @@ dist/
 .vite/
 .vscode/
 .idea/
+SteamPlus.session.sql
