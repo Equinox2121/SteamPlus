@@ -10,6 +10,15 @@ function Profile() {
     const [gamesLoading, setGamesLoading] = useState(false);
     const [gamesError, setGamesError] = useState("");
 
+
+
+    const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0 });
+    const [achievementsList, setAchievementsList] = useState([]);
+    const [statsLoading, setStatsLoading] = useState(false);
+
+
+
+    
     const navigate = useNavigate();
 
     const fetchLibrary = () => {
@@ -30,9 +39,28 @@ function Profile() {
             .finally(() => setGamesLoading(false));
     };
 
+
+    const fetchGlobalStats = () => {
+        setStatsLoading(true);
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-stats`, { credentials: 'include' })
+            .then(res => res.json())
+            .then(data => {
+                // Mapping the backend data to your local state
+                setStats({
+                    recentPlaytime: data.recentPlaytimeHrs || 0,
+                    activeGames: data.recentGamesCount || 0
+                });
+                setAchievementsList(data.games || []);
+            })
+            .catch(err => console.error("Stats fetch failed:", err))
+            .finally(() => setStatsLoading(false));
+    };
+
+
     useEffect(() => {
         if (user) {
             fetchLibrary();
+            fetchGlobalStats();
         } else {
             setGames([]);
             setGamesLoading(false);
@@ -61,6 +89,34 @@ function Profile() {
                         />
                         <h2 style={{ margin: 0 }}>Welcome, {user.username}!</h2>
                     </div>
+
+
+
+
+                    {/* --- USER STATS DASHBOARD --- */}
+{user && !statsLoading && (
+    <div className="stats-dashboard" style={{ 
+        display: 'flex', 
+        gap: '30px', 
+        marginBottom: '30px', 
+        padding: '20px', 
+        background: 'rgba(23, 26, 33, 0.8)', 
+        borderRadius: '4px',
+        borderLeft: '4px solid #66c0f4'
+    }}>
+        <div>
+            <span style={{ display: 'block', color: '#8f98a0', fontSize: '11px', textTransform: 'uppercase' }}>Recent Playtime</span>
+            <span style={{ fontSize: '24px', color: '#ffffff', fontWeight: 'bold' }}>{stats.recentPlaytime} hrs</span>
+            <span style={{ color: '#8f98a0', fontSize: '12px', marginLeft: '5px' }}>last 2 weeks</span>
+        </div>
+        <div style={{ borderLeft: '1px solid #333', paddingLeft: '30px' }}>
+            <span style={{ display: 'block', color: '#8f98a0', fontSize: '11px', textTransform: 'uppercase' }}>Games Played</span>
+            <span style={{ fontSize: '24px', color: '#ffffff', fontWeight: 'bold' }}>{stats.activeGames}</span>
+            <span style={{ color: '#8f98a0', fontSize: '12px', marginLeft: '5px' }}>recently</span>
+        </div>
+    </div>
+)}
+
 
                     <h3 className="section-title">Your Steam Library</h3>
                     {gamesLoading ? (

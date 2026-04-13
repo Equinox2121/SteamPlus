@@ -409,6 +409,50 @@ router.get("/steam/recommendations/:appid", async (req, res) => {
     }
 });
 
+router.get("/steam/user-stats", async (req, res) => {
+    const token = req.cookies?.token;
+    let user = null;
+
+    if (token) {
+        try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
+    }
+    if (!user && req.user) user = req.user;
+    if (!user) return res.status(401).json({ error: "no auth" });
+
+    let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
+    if (steamId.includes('openid/id/')) steamId = steamId.split('openid/id/')[1];
+
+    // 1. Get User Summary (for basic status)
+    // 2. Get Recently Played Games (for recent achievements/playtime)
+    const recentGamesUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json`;
+
+    https.get(recentGamesUrl, (apiRes) => {
+        let data = "";
+        apiRes.on("data", (chunk) => (data += chunk));
+        apiRes.on("end", () => {
+            try {
+                const parsed = JSON.parse(data);
+                const games = parsed.response.games || [];
+                
+                // Calculate total recent playtime
+                const totalRecentMinutes = games.reduce((acc, g) => acc + g.playtime_2weeks, 0);
+                
+                res.json({
+                    recentPlaytimeHrs: Math.round(totalRecentMinutes / 60),
+                    recentGamesCount: parsed.response.total_count || 0,
+                    games: games.map(g => ({
+                        name: g.name,
+                        appid: g.appid,
+                        playtime: Math.round(g.playtime_forever / 60)
+                    }))
+                });
+            } catch (e) {
+                res.status(500).json({ error: "failed to parse steam stats" });
+            }
+        });
+    });
+});
+
 router.get("/", (req, res) => {
     res.redirect(`${FRONTEND_URL}/home`);
 });
