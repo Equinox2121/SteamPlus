@@ -213,6 +213,7 @@ router.get("/steam/library", (req, res) => {
                 const simplified = games.map(g => ({
                     appid: g.appid,
                     name: g.name,
+                    playtime_forever: g.playtime_forever,
                     header_image: `https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/header.jpg`
                 }));
                 res.json({ games: simplified });
@@ -458,6 +459,18 @@ router.get("/steam/user-stats", async (req, res) => {
     }
 });
 
+
+
+
+
+
+
+
+
+
+
+
+
 // Detailed Game Stats with Rarity
 router.get("/steam/game-stats/:appid", async (req, res) => {
     const { appid } = req.params;
@@ -529,6 +542,11 @@ router.get("/steam/game-stats/:appid", async (req, res) => {
         res.status(500).json({ error: "Failed to fetch game statistics" });
     }
 });
+
+
+
+
+
 
 
 
