@@ -4,7 +4,7 @@
     color: white;
 }
 
-/* Header & Auth */
+/* Header */
 .header-section {
     display: flex;
     align-items: center;
@@ -118,67 +118,4 @@
     font-size: 11px;
     color: #8f98a0;
     margin-top: 2px;
-}
-
-/* Modal */
-.stats-modal-backdrop {
-    position: fixed;
-    top: 0; left: 0;
-    width: 100vw; height: 100vh;
-    background: rgba(0, 0, 0, 0.8);
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    z-index: 9999;
-}
-
-.stats-modal-content {
-    background: #1b2838;
-    border: 1px solid #66c0f4;
-    width: 400px;
-    padding: 20px;
-    border-radius: 4px;
-    box-shadow: 0 0 20px rgba(0,0,0,0.5);
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    border-bottom: 1px solid #2a475e;
-    margin-bottom: 15px;
-    padding-bottom: 10px;
-}
-
-.close-modal-x {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 24px;
-    cursor: pointer;
-}
-
-.stat-summary-row {
-    display: flex;
-    gap: 10px;
-    margin-bottom: 20px;
-}
-
-.stat-pill {
-    background: #171a21;
-    padding: 10px;
-    flex: 1;
-    border-radius: 4px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-}
-
-.stat-pill label { 
-    font-size: 10px; 
-    color: #8f98a0; 
-}
-
-.stat-pill span { 
-    font-weight: bold; 
-    color: #66c0f4; 
 }

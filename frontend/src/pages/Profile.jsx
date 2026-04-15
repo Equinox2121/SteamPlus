@@ -14,13 +14,11 @@ function Profile() {
     const [gamesError, setGamesError] = useState("");
 
 
-
-    // stats.totalGames will now be populated from the backend
     const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0, totalGames: 0, accountLevel: 0 });
     const [statsLoading, setStatsLoading] = useState(false);
 
-    const [activeGameStats, setActiveGameStats] = useState(null); 
-    const [showOverlayId, setShowOverlayId] = useState(null);
+    // const [activeGameStats, setActiveGameStats] = useState(null); 
+    // const [showOverlayId, setShowOverlayId] = useState(null);
 
     
     const navigate = useNavigate();
@@ -43,7 +41,6 @@ function Profile() {
             .finally(() => setGamesLoading(false));
     };
 
-
     const fetchGlobalStats = () => {
         setStatsLoading(true);
         fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-stats`, { credentials: 'include' })
@@ -60,18 +57,17 @@ function Profile() {
             .finally(() => setStatsLoading(false));
     };
 
-    const fetchGameSpecificStats = (appid) => {
-        setShowOverlayId(appid);
-        setActiveGameStats(null); 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/game-stats/${appid}`, { credentials: 'include' })
-            .then(res => res.json())
-            .then(data => setActiveGameStats(data))
-            .catch(err => {
-                console.error(err);
-                setShowOverlayId(null);
-            });
-    };
-
+    // const fetchGameSpecificStats = (appid) => {
+    //     setShowOverlayId(appid);
+    //     setActiveGameStats(null); 
+    //     fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/game-stats/${appid}`, { credentials: 'include' })
+    //         .then(res => res.json())
+    //         .then(data => setActiveGameStats(data))
+    //         .catch(err => {
+    //             console.error(err);
+    //             setShowOverlayId(null);
+    //         });
+    // };
 
     useEffect(() => {
         if (user) {
@@ -147,11 +143,9 @@ return (
                                     <div className="game-info">
                                         <div className="game-name-container">
                                             <div className="game-name-text">{game.name}</div>
-                                            <button 
-                                                className="stats-icon-btn" 
-                                                onClick={(e) => {
+                                            <button className="stats-icon-btn" onClick={(e) => {
                                                     e.stopPropagation(); 
-                                                    fetchGameSpecificStats(game.appid);
+                                                    // fetchGameSpecificStats(game.appid);
                                                 }}
                                             >
                                                 <img src={statsIcon} alt="Stats" />
@@ -165,57 +159,6 @@ return (
                                     </div>
                                 </div>
                             ))}
-                        </div>
-                    )}
-
-                    {/* --- THIS PART WAS MISSING --- */}
-                    {showOverlayId && (
-                        <div className="stats-modal-backdrop" onClick={() => setShowOverlayId(null)}>
-                            <div className="stats-modal-content" onClick={e => e.stopPropagation()}>
-                                <div className="modal-header">
-                                    <h3 style={{margin: 0}}>Game Stats</h3>
-                                    <button className="close-modal-x" onClick={() => setShowOverlayId(null)}>&times;</button>
-                                </div>
-
-                                {!activeGameStats ? (
-                                    <div style={{padding: '20px', textAlign: 'center'}}>Loading statistics...</div>
-                                ) : (
-                                    <div className="modal-body">
-                                        <div className="stat-summary-row">
-                                            <div className="stat-pill">
-                                                <label>Unlocked</label>
-                                                <span>{activeGameStats.unlocked} / {activeGameStats.total}</span>
-                                            </div>
-                                            <div className="stat-pill">
-                                                <label>Progress</label>
-                                                <span>{activeGameStats.percentage}%</span>
-                                            </div>
-                                        </div>
-
-                                        {activeGameStats.customStats && activeGameStats.customStats.length > 0 && (
-                                            <div className="custom-stats-section">
-                                                <div className="stats-grid">
-                                                    {activeGameStats.customStats.slice(0, 4).map((s, i) => (
-                                                        <div key={i} className="mini-stat">
-                                                            <span className="mini-label">{s.label}</span>
-                                                            <span className="mini-value">{s.value.toLocaleString()}</span>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        )}
-
-                                        <div style={{ width: '100%', height: 120, marginTop: '20px' }}>
-                                            <ResponsiveContainer>
-                                                <BarChart data={activeGameStats.achievements.slice(0, 5)}>
-                                                    <Bar dataKey="rarity" fill="#66c0f4" />
-                                                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#1b2838', border: '1px solid #66c0f4', fontSize: '12px'}} />
-                                                </BarChart>
-                                            </ResponsiveContainer>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
                         </div>
                     )}
                 </>
