@@ -425,80 +425,109 @@ router.get("/steam/user-stats", async (req, res) => {
     let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
     if (steamId.includes('openid/id/')) steamId = steamId.split('openid/id/')[1];
 
-    // 1. Get User Summary (for basic status)
-    // 2. Get Recently Played Games (for recent achievements/playtime)
-    const recentGamesUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json`;
+    try {
+        const recentGamesUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}`;
+        const steamLevelUrl = `https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/?key=${STEAM_API_KEY}&steamid=${steamId}`;
+        const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&include_played_free_games=1`;
 
-    https.get(recentGamesUrl, (apiRes) => {
-        let data = "";
-        apiRes.on("data", (chunk) => (data += chunk));
-        apiRes.on("end", () => {
-            try {
-                const parsed = JSON.parse(data);
-                const games = parsed.response.games || [];
-                
-                // Calculate total recent playtime
-                const totalRecentMinutes = games.reduce((acc, g) => acc + g.playtime_2weeks, 0);
-                
-                res.json({
-                    recentPlaytimeHrs: Math.round(totalRecentMinutes / 60),
-                    recentGamesCount: parsed.response.total_count || 0,
-                    games: games.map(g => ({
-                        name: g.name,
-                        appid: g.appid,
-                        playtime: Math.round(g.playtime_forever / 60)
-                    }))
-                });
-            } catch (e) {
-                res.status(500).json({ error: "failed to parse steam stats" });
-            }
+        // We fetch everything in parallel here. This is much faster and 
+        // keeps everything in the async scope.
+        const [recentRes, levelRes, ownedRes] = await Promise.all([
+            fetch(recentGamesUrl).then(r => r.json()),
+            fetch(steamLevelUrl).then(r => r.json()),
+            fetch(ownedGamesUrl).then(r => r.json())
+        ]);
+
+        const games = recentRes.response?.games || [];
+        const totalRecentMinutes = games.reduce((acc, g) => acc + g.playtime_2weeks, 0);
+
+        res.json({
+            steamLevel: levelRes.response?.player_level || 0,
+            recentPlaytimeHrs: Math.round(totalRecentMinutes / 60),
+            recentGamesCount: recentRes.response?.total_count || 0,
+            totalGamesOwned: ownedRes.response?.game_count || 0,
+            games: games.map(g => ({
+                name: g.name,
+                appid: g.appid,
+                playtime: Math.round(g.playtime_forever / 60)
+            }))
         });
-    });
+    } catch (e) {
+        console.error("Steam API Error:", e);
+        res.status(500).json({ error: "failed to fetch steam stats" });
+    }
 });
 
-
-// backend/index.js
-
-// New route for specific game stats
+// Detailed Game Stats with Rarity
 router.get("/steam/game-stats/:appid", async (req, res) => {
     const { appid } = req.params;
     const token = req.cookies?.token;
     let user = null;
-
-    if (token) {
-        try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
-    }
+    
+    // Auth Logic
+    if (token) try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
     if (!user && req.user) user = req.user;
     if (!user) return res.status(401).json({ error: "no auth" });
 
     let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
     if (steamId.includes('openid/id/')) steamId = steamId.split('openid/id/')[1];
 
-    // Endpoint for achievements
-    const achUrl = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
+    try {
+        const userAchUrl = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
+        const globalAchUrl = `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${appid}`;
+        const userStatsUrl = `https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
 
-    https.get(achUrl, (apiRes) => {
-        let data = "";
-        apiRes.on("data", (chunk) => (data += chunk));
-        apiRes.on("end", () => {
-            try {
-                const parsed = JSON.parse(data);
-                const achievements = parsed.playerstats?.achievements || [];
-                
-                const unlocked = achievements.filter(a => a.achieved === 1).length;
-                const total = achievements.length;
+        // We use allSettled because GetUserStatsForGame often fails/returns 400 if a game doesn't support it
+        const [userAchRes, globalAchRes, userStatsRes] = await Promise.allSettled([
+            fetch(userAchUrl).then(r => r.json()),
+            fetch(globalAchUrl).then(r => r.json()),
+            fetch(userStatsUrl).then(r => r.json())
+        ]);
 
-                res.json({
-                    unlocked,
-                    total,
-                    percentage: total > 0 ? Math.round((unlocked / total) * 100) : 0,
-                    achievements: achievements.slice(0, 5) // Send top 5 back
-                });
-            } catch (e) {
-                res.status(500).json({ error: "Failed to fetch game stats" });
-            }
+        // 1. Process Achievements (Most Games)
+        let achievements = [];
+        let unlockedCount = 0;
+        let totalCount = 0;
+
+        if (userAchRes.status === 'fulfilled' && userAchRes.value.playerstats?.success) {
+            const uAchs = userAchRes.value.playerstats.achievements || [];
+            const gAchs = (globalAchRes.status === 'fulfilled') ? globalAchRes.value.achievementpercentages.achievements : [];
+
+            achievements = uAchs.map(ua => {
+                const ga = gAchs.find(g => g.name === ua.apiname);
+                return {
+                    name: ua.apiname,
+                    unlocked: ua.achieved === 1,
+                    rarity: ga ? parseFloat(ga.percent).toFixed(1) : 0
+                };
+            });
+
+            unlockedCount = uAchs.filter(a => a.achieved === 1).length;
+            totalCount = uAchs.length;
+        }
+
+        // 2. Process Numeric Stats (CS2, TF2, Rust, etc.)
+        let customStats = [];
+        if (userStatsRes.status === 'fulfilled' && userStatsRes.value.playerstats?.stats) {
+            customStats = userStatsRes.value.playerstats.stats.map(s => ({
+                label: s.name.replace(/_/g, ' '), // Prettify "total_kills" to "total kills"
+                value: s.value
+            }));
+        }
+
+        res.json({
+            appid,
+            unlocked: unlockedCount,
+            total: totalCount,
+            percentage: totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0,
+            achievements: achievements.sort((a, b) => a.rarity - b.rarity), // Rarest first
+            customStats: customStats // Will be empty if game doesn't support numerical stats
         });
-    });
+
+    } catch (e) {
+        console.error("Steam Stats Error:", e);
+        res.status(500).json({ error: "Failed to fetch game statistics" });
+    }
 });
 
 
