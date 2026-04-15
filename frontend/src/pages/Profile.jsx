@@ -16,7 +16,7 @@ function Profile() {
 
 
     // stats.totalGames will now be populated from the backend
-    const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0, totalGames: 0 });
+    const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0, totalGames: 0, accountLevel: 0 });
     const [statsLoading, setStatsLoading] = useState(false);
 
     const [activeGameStats, setActiveGameStats] = useState(null); 
@@ -52,7 +52,8 @@ function Profile() {
                 setStats({
                     recentPlaytime: data.recentPlaytimeHrs || 0,
                     activeGames: data.recentGamesCount || 0,
-                    totalGames: data.totalGamesOwned || 0 // Match the backend addition
+                    totalGames: data.totalGamesOwned || 0,
+                    accountLevel: data.playerLevel || 0 
                 });
             })
             .catch(err => console.error("Stats fetch failed:", err))
@@ -87,7 +88,7 @@ function Profile() {
         await logout(() => navigate("/login"));
     };
 
-        return (
+return (
         <div className="home-container">
             {loading ? (
                 <div className="login-content" style={{ margin: 'auto' }}>
@@ -105,13 +106,28 @@ function Profile() {
                         <h2 style={{ margin: 0 }}>Welcome, {user.username}!</h2>
                     </div>
 
+                    <div className="stats-dashboard">
+                        <div className="dash-stat">
+                            <span className="label">Steam Level</span>
+                            <span className="value">{stats.accountLevel}</span>
+                        </div>
+                        <div className="dash-stat border-left">
+                            <span className="label">Recent Playtime</span>
+                            <span className="value">{stats.recentPlaytime} hrs</span>
+                        </div>
+                        <div className="dash-stat border-left">
+                            <span className="label">Library Size</span>
+                            <span className="value">{stats.totalGames || games.length}</span>
+                        </div>
+                        <div className="dash-stat border-left">
+                            <span className="label">Active Games</span>
+                            <span className="value">{stats.activeGames}</span>
+                        </div>
+                    </div>
+
                     <h3 className="section-title">Your Steam Library</h3>
                     {gamesLoading ? (
                         <p>Loading your games...</p>
-                    ) : gamesError ? (
-                        <p style={{ color: '#ff4b4b' }}>{gamesError}</p>
-                    ) : games.length === 0 ? (
-                        <p>No games found or your library may be private.</p>
                     ) : (
                         <div className="library-container">
                             {games.map(game => (
@@ -129,9 +145,20 @@ function Profile() {
                                         />
                                     </div>
                                     <div className="game-info">
-                                        <div style={{ fontWeight: '500', color: '#ffffff' }}>{game.name}</div>
+                                        <div className="game-name-container">
+                                            <div className="game-name-text">{game.name}</div>
+                                            <button 
+                                                className="stats-icon-btn" 
+                                                onClick={(e) => {
+                                                    e.stopPropagation(); 
+                                                    fetchGameSpecificStats(game.appid);
+                                                }}
+                                            >
+                                                <img src={statsIcon} alt="Stats" />
+                                            </button>
+                                        </div>
                                         {game.playtime_forever !== undefined && (
-                                            <div style={{ fontSize: '11px', color: '#8f98a0', marginTop: '4px' }}>
+                                            <div className="playtime-text">
                                                 {Math.round(game.playtime_forever / 60)} hours on record
                                             </div>
                                         )}
@@ -141,6 +168,56 @@ function Profile() {
                         </div>
                     )}
 
+                    {/* --- THIS PART WAS MISSING --- */}
+                    {showOverlayId && (
+                        <div className="stats-modal-backdrop" onClick={() => setShowOverlayId(null)}>
+                            <div className="stats-modal-content" onClick={e => e.stopPropagation()}>
+                                <div className="modal-header">
+                                    <h3 style={{margin: 0}}>Game Stats</h3>
+                                    <button className="close-modal-x" onClick={() => setShowOverlayId(null)}>&times;</button>
+                                </div>
+
+                                {!activeGameStats ? (
+                                    <div style={{padding: '20px', textAlign: 'center'}}>Loading statistics...</div>
+                                ) : (
+                                    <div className="modal-body">
+                                        <div className="stat-summary-row">
+                                            <div className="stat-pill">
+                                                <label>Unlocked</label>
+                                                <span>{activeGameStats.unlocked} / {activeGameStats.total}</span>
+                                            </div>
+                                            <div className="stat-pill">
+                                                <label>Progress</label>
+                                                <span>{activeGameStats.percentage}%</span>
+                                            </div>
+                                        </div>
+
+                                        {activeGameStats.customStats && activeGameStats.customStats.length > 0 && (
+                                            <div className="custom-stats-section">
+                                                <div className="stats-grid">
+                                                    {activeGameStats.customStats.slice(0, 4).map((s, i) => (
+                                                        <div key={i} className="mini-stat">
+                                                            <span className="mini-label">{s.label}</span>
+                                                            <span className="mini-value">{s.value.toLocaleString()}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <div style={{ width: '100%', height: 120, marginTop: '20px' }}>
+                                            <ResponsiveContainer>
+                                                <BarChart data={activeGameStats.achievements.slice(0, 5)}>
+                                                    <Bar dataKey="rarity" fill="#66c0f4" />
+                                                    <Tooltip cursor={{fill: 'transparent'}} contentStyle={{backgroundColor: '#1b2838', border: '1px solid #66c0f4', fontSize: '12px'}} />
+                                                </BarChart>
+                                            </ResponsiveContainer>
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                    )}
                 </>
             ) : (
                 <div className="login-content" style={{ margin: '100px auto' }}>

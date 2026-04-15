@@ -1,0 +1,184 @@
+.home-container {
+    padding: 40px;
+    min-height: 100vh;
+    color: white;
+}
+
+/* Header & Auth */
+.header-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #2a475e;
+}
+
+.avatar-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    border: 1px solid #66c0f4;
+}
+
+/* Stats Dashboard */
+.stats-dashboard {
+    background: rgba(23, 26, 33, 0.9);
+    display: flex;
+    padding: 20px;
+    margin-bottom: 40px;
+    border-radius: 4px;
+}
+
+.dash-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+}
+
+.dash-stat .label {
+    color: #8f98a0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.dash-stat .value {
+    font-size: 22px;
+    font-weight: bold;
+    color: #66c0f4;
+}
+
+.border-left {
+    border-left: 1px solid #2a475e;
+}
+
+/* Game Cards */
+.library-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.game-info {
+    padding: 12px;
+    background: #12141a;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-name-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.game-name-text {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+.stats-icon-btn {
+    background: rgba(102, 192, 244, 0.1);
+    border: 1px solid rgba(102, 192, 244, 0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    padding: 4px;
+}
+
+.stats-icon-btn:hover {
+    background: rgba(102, 192, 244, 0.3);
+    border-color: #66c0f4;
+    transform: scale(1.05);
+}
+
+.stats-icon-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: brightness(0) saturate(100%) invert(83%) sepia(21%) saturate(735%) hue-rotate(178deg) brightness(101%) contrast(93%);
+}
+
+.playtime-text {
+    font-size: 11px;
+    color: #8f98a0;
+    margin-top: 2px;
+}
+
+/* Modal */
+.stats-modal-backdrop {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100vw; height: 100vh;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+}
+
+.stats-modal-content {
+    background: #1b2838;
+    border: 1px solid #66c0f4;
+    width: 400px;
+    padding: 20px;
+    border-radius: 4px;
+    box-shadow: 0 0 20px rgba(0,0,0,0.5);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    border-bottom: 1px solid #2a475e;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+}
+
+.close-modal-x {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+}
+
+.stat-summary-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.stat-pill {
+    background: #171a21;
+    padding: 10px;
+    flex: 1;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.stat-pill label { 
+    font-size: 10px; 
+    color: #8f98a0; 
+}
+
+.stat-pill span { 
+    font-weight: bold; 
+    color: #66c0f4; 
+}
