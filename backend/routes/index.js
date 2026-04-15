@@ -409,6 +409,9 @@ router.get("/steam/recommendations/:appid", async (req, res) => {
     }
 });
 
+
+
+
 router.get("/steam/user-stats", async (req, res) => {
     const token = req.cookies?.token;
     let user = null;
@@ -452,6 +455,54 @@ router.get("/steam/user-stats", async (req, res) => {
         });
     });
 });
+
+
+// backend/index.js
+
+// New route for specific game stats
+router.get("/steam/game-stats/:appid", async (req, res) => {
+    const { appid } = req.params;
+    const token = req.cookies?.token;
+    let user = null;
+
+    if (token) {
+        try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
+    }
+    if (!user && req.user) user = req.user;
+    if (!user) return res.status(401).json({ error: "no auth" });
+
+    let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
+    if (steamId.includes('openid/id/')) steamId = steamId.split('openid/id/')[1];
+
+    // Endpoint for achievements
+    const achUrl = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
+
+    https.get(achUrl, (apiRes) => {
+        let data = "";
+        apiRes.on("data", (chunk) => (data += chunk));
+        apiRes.on("end", () => {
+            try {
+                const parsed = JSON.parse(data);
+                const achievements = parsed.playerstats?.achievements || [];
+                
+                const unlocked = achievements.filter(a => a.achieved === 1).length;
+                const total = achievements.length;
+
+                res.json({
+                    unlocked,
+                    total,
+                    percentage: total > 0 ? Math.round((unlocked / total) * 100) : 0,
+                    achievements: achievements.slice(0, 5) // Send top 5 back
+                });
+            } catch (e) {
+                res.status(500).json({ error: "Failed to fetch game stats" });
+            }
+        });
+    });
+});
+
+
+
 
 router.get("/", (req, res) => {
     res.redirect(`${FRONTEND_URL}/home`);
