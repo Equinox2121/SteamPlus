@@ -227,6 +227,150 @@ router.get("/steam/library", (req, res) => {
     });
 });
 
+
+//friends feature route
+async function fetchSteamJson(url) {
+    return new Promise((resolve, reject) => {
+        https.get(url, (apiRes) => {
+            const { statusCode } = apiRes;
+            let data = "";
+            apiRes.on("data", (chunk) => (data += chunk));
+            apiRes.on("end", () => {
+                try {
+                    resolve({ statusCode, data: JSON.parse(data) });
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }).on("error", reject);
+    });
+}
+
+
+function getSteamPersonaState(state) {
+    switch (state) {
+        case 0:
+            return 'Offline';
+        case 1:
+            return 'Online';
+        case 2:
+            return 'Busy';
+        case 3:
+            return 'Away';
+        case 4:
+            return 'Snooze';
+        case 5:
+            return 'Looking to trade';
+        case 6:
+            return 'Looking to play';
+        default:
+            return 'Unknown';
+    }
+}
+
+
+router.get("/steam/friends-activity", async (req, res) => {
+    const token = req.cookies?.token;
+    let user = null;
+
+
+    if (token) {
+        try {
+            user = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            console.error("JWT verify error in friends activity route:", error);
+        }
+    }
+
+
+    if (!user && req.user) {
+        user = req.user;
+    }
+
+
+    if (!user) {
+        return res.status(401).json({ error: "no auth" });
+    }
+
+
+    let steamId = user.steamid || (user._json && (user._json.steamid || user._json.steamid64)) || user.id;
+    if (steamId && typeof steamId === 'string' && steamId.includes('https://steamcommunity.com/openid/id/')) {
+        steamId = steamId.split('https://steamcommunity.com/openid/id/')[1];
+    }
+
+
+    const isActuallySteamId = steamId && typeof steamId === 'string' && steamId.length >= 15 && /^\d+$/.test(steamId);
+    if (!isActuallySteamId) {
+        return res.status(400).json({ error: "steamid not found or invalid" });
+    }
+
+
+    if (!STEAM_API_KEY) {
+        console.error("STEAM_API_KEY is missing");
+        return res.status(500).json({ error: "Steam API key not configured" });
+    }
+
+
+    try {
+        const friendsUrl = `https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&relationship=friend`;
+        const friendsResp = await fetchSteamJson(friendsUrl);
+
+
+        if (friendsResp.statusCode !== 200 || !friendsResp.data.friendslist?.friends) {
+            return res.status(502).json({ error: "Unable to load Steam friends list" });
+        }
+
+
+        const friendIds = friendsResp.data.friendslist.friends
+            .map((friend) => friend.steamid)
+            .filter(Boolean)
+            .slice(0, 12);
+
+
+        if (friendIds.length === 0) {
+            return res.json({ friends: [] });
+        }
+
+
+        const summariesUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${friendIds.join(',')}`;
+        const summariesResp = await fetchSteamJson(summariesUrl);
+        const players = summariesResp.data.response?.players || [];
+
+
+        const friendActivities = await Promise.all(players.map(async (player) => {
+            const recentUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v1/?key=${STEAM_API_KEY}&steamid=${player.steamid}&count=3`;
+            let recentGames = [];
+            try {
+                const recentResp = await fetchSteamJson(recentUrl);
+                recentGames = recentResp.data.response?.games || [];
+            } catch (e) {
+                console.error(`Failed loading recent games for ${player.steamid}:`, e.message);
+                recentGames = [];
+            }
+            return {
+                steamid: player.steamid,
+                username: player.personaname || 'Steam Friend',
+                avatar: player.avatarfull || player.avatarmedium || player.avatar || null,
+                status: getSteamPersonaState(player.personastate),
+                currentGame: player.gameextrainfo || null,
+                recentGames: recentGames.map((game) => ({
+                    appid: game.appid,
+                    name: game.name,
+                    playtime_2weeks: game.playtime_2weeks || 0,
+                    playtime_forever: game.playtime_forever || 0,
+                    header_image: `https://cdn.cloudflare.steamstatic.com/steam/apps/${game.appid}/header.jpg`
+                }))
+            };
+        }));
+
+
+        res.json({ friends: friendActivities });
+    } catch (error) {
+        console.error("friends activity error", error);
+        res.status(500).json({ error: "Failed to load friend activity" });
+    }
+});
+
 // steam game details route
 router.get("/steam/game/:appid", async (req, res) => {
     const { appid } = req.params;
