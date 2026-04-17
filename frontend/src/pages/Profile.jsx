@@ -12,7 +12,6 @@ function Profile() {
     const [gamesLoading, setGamesLoading] = useState(false);
     const [gamesError, setGamesError] = useState("");
 
-
     const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0, totalGames: 0, accountLevel: 0 });
     const [statsLoading, setStatsLoading] = useState(false);
 
@@ -23,8 +22,8 @@ function Profile() {
     const [activeGameStats, setActiveGameStats] = useState(null);
     const [showOverlayId, setShowOverlayId] = useState(null);
     const [statsLoadingGame, setStatsLoadingGame] = useState(false);
+    const [gameStatsCache, setGameStatsCache] = useState({});
 
-    
     const navigate = useNavigate();
 
     const fetchLibrary = () => {
@@ -45,7 +44,7 @@ function Profile() {
             .finally(() => setGamesLoading(false));
     };
 
-    const fetchGlobalStats = () => {
+    const fetchUserStats = () => {
         setStatsLoading(true);
         fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-stats`, { credentials: 'include' })
             .then(res => res.json())
@@ -61,7 +60,7 @@ function Profile() {
             .finally(() => setStatsLoading(false));
     };
 
-    const fetchExtendedStats = () => {
+    const fetchExtendedUserStats = () => {
         setExtendedLoading(true);
 
         fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-extended-stats`, {
@@ -78,20 +77,27 @@ function Profile() {
         setShowExpanded(next);
 
         if (next && !extendedStats) {
-            fetchExtendedStats();
+            fetchExtendedUserStats();
         }
     };
 
     const fetchGameSpecificStats = (appid) => {
+        if (gameStatsCache[appid]) {
+            setActiveGameStats(gameStatsCache[appid]);
+            setShowOverlayId(appid);
+            return;
+        }
+
         setShowOverlayId(appid);
         setActiveGameStats(null);
         setStatsLoadingGame(true);
 
-        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/game-stats/${appid}`, {
-            credentials: 'include'
-        })
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/game-stats/${appid}`, {credentials: 'include'})
             .then(res => res.json())
-            .then(data => setActiveGameStats(data))
+            .then(data => {
+                setActiveGameStats(data);
+                setGameStatsCache(prev => ({ ...prev, [appid]: data }));
+            })
             .catch(err => {
                 console.error(err);
                 setShowOverlayId(null);
@@ -102,7 +108,7 @@ function Profile() {
     useEffect(() => {
         if (user) {
             fetchLibrary();
-            fetchGlobalStats();
+            fetchUserStats();
         } else {
             setGames([]);
             setGamesLoading(false);
@@ -114,7 +120,7 @@ function Profile() {
         await logout(() => navigate("/login"));
     };
 
-return (
+    return (
         <div className="home-container">
             {loading ? (
                 <div className="login-content" style={{ margin: 'auto' }}>
