@@ -236,3 +236,61 @@
     height: 64px;
     object-fit: contain;
 }
+
+/* Make container stack vertically */
+.stats-dashboard {
+    background: rgba(23, 26, 33, 0.9);
+    display: flex;
+    flex-direction: column; /* IMPORTANT */
+    padding: 20px;
+    margin-bottom: 40px;
+    border-radius: 4px;
+}
+
+/* Top row stays your original layout */
+.stats-row {
+    display: flex;
+    cursor: pointer;
+}
+
+
+.expanded-row {
+    display: flex;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #2a475e;
+}
+
+
+
+.value.small {
+    padding-top: 4px;
+    font-size: 16px;
+}
+
+
+
+/* anchor for absolute positioning */
+.stats-dashboard {
+    position: relative; /* REQUIRED */
+}
+
+/* floating toggle text */
+.stats-toggle {
+    position: absolute;
+    bottom: 8px;
+    right: 14px;
+
+    font-size: 11px;
+    color: #66c0f4;
+    cursor: pointer;
+
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+/* hover effect */
+.stats-toggle:hover {
+    opacity: 1;
+    text-decoration: underline;
+}

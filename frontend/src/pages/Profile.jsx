@@ -132,64 +132,72 @@ return (
                         <h2 style={{ margin: 0 }}>Welcome, {user.username}!</h2>
                     </div>
 
-                    <div className="stats-dashboard clickable" onClick={toggleExpandedStats}>
-                        <div className="dash-stat">
-                            <span className="label">Steam Level</span>
-                            <span className="value">{stats.accountLevel}</span>
+                    <div className={`stats-dashboard ${showExpanded ? "expanded" : ""}`}>
+
+                        <div className="stats-toggle" onClick={toggleExpandedStats}>
+                            {showExpanded ? "Show less" : "Show more"}
                         </div>
-                        <div className="dash-stat border-left">
-                            <span className="label">Recent Playtime</span>
-                            <span className="value">{stats.recentPlaytime} hrs</span>
+                        
+                        <div className="stats-row" onClick={toggleExpandedStats}>
+                            <div className="dash-stat">
+                                <span className="label">Steam Level</span>
+                                <span className="value">{stats.accountLevel}</span>
+                            </div>
+
+                            <div className="dash-stat border-left">
+                                <span className="label">Recent Playtime</span>
+                                <span className="value">{stats.recentPlaytime} hrs</span>
+                            </div>
+
+                            <div className="dash-stat border-left">
+                                <span className="label">Library Size</span>
+                                <span className="value">{stats.totalGames || games.length}</span>
+                            </div>
+
+                            <div className="dash-stat border-left chevron-container">
+                                <span className="label">Active Games</span>
+                                <span className="value">{stats.activeGames}</span>
+                            </div>
                         </div>
-                        <div className="dash-stat border-left">
-                            <span className="label">Library Size</span>
-                            <span className="value">{stats.totalGames || games.length}</span>
-                        </div>
-                        <div className="dash-stat border-left">
-                            <span className="label">Active Games</span>
-                            <span className="value">{stats.activeGames}</span>
-                        </div>
+
+                        {showExpanded && (
+                            <div className="expanded-row">
+                                {extendedLoading ? (
+                                    <p>Loading...</p>
+                                ) : extendedStats && (
+                                    <>
+                                        <div className="dash-stat">
+                                            <span className="label">Achievements</span>
+                                            <span className="value">
+                                                {extendedStats.totalAchievementsUnlocked}/{extendedStats.totalAchievements} 
+                                            </span>
+                                        </div>
+
+                                        <div className="dash-stat border-left">
+                                            <span className="label">Top Genres</span>
+                                            <span className="value small">
+                                                {extendedStats.topGenres?.join(", ") || "N/A"}
+                                            </span>
+                                        </div>
+
+                                        <div className="dash-stat border-left">
+                                            <span className="label">Most Played</span>
+                                            <span className="value small">
+                                                {extendedStats.mostPlayed?.name || "N/A"}
+                                            </span>
+                                        </div>
+
+                                        <div className="dash-stat border-left">
+                                            <span className="label">Average Game Playtime</span>
+                                            <span className="value">
+                                                {extendedStats.avgPlaytime || "N/A"} hrs
+                                            </span>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        )}
                     </div>
-
-                    {showExpanded && (
-    <div className="expanded-stats">
-        {extendedLoading ? (
-            <p>Loading advanced stats...</p>
-        ) : extendedStats && (
-            <>
-                <div className="expanded-grid">
-
-                    <div>
-                        <strong>Total Achievements</strong>
-                        <div>
-                            {extendedStats.totalAchievementsUnlocked} / {extendedStats.totalAchievements}
-                        </div>
-                    </div>
-
-                    <div>
-                        <strong>Favorite Genres</strong>
-                        <div>{extendedStats.topGenres?.join(", ") || "N/A"}</div>
-                    </div>
-
-                    <div>
-                        <strong>Most Played</strong>
-                        <div>
-                            {extendedStats.mostPlayed?.name} ({extendedStats.mostPlayed?.hours} hrs)
-                        </div>
-                    </div>
-
-                    <div>
-                        <strong>Average Playtime</strong>
-                        <div>{extendedStats.avgPlaytime} hrs</div>
-                    </div>
-
-                </div>
-
-
-            </>
-        )}
-    </div>
-)}
 
                     <h3 className="section-title">Your Steam Library</h3>
                     {gamesLoading ? (
@@ -231,17 +239,13 @@ return (
                             ))}
                         </div>
                     )}
+
                     {showOverlayId && (
                         <div className="stats-overlay" onClick={() => setShowOverlayId(null)}>
                             <div className="stats-modal" onClick={(e) => e.stopPropagation()}>
 
                                 {/* CLOSE BUTTON */}
-                                <button 
-                                    className="close-btn"
-                                    onClick={() => setShowOverlayId(null)}
-                                >
-                                    ✕
-                                </button>
+                                <button className="close-btn" onClick={() => setShowOverlayId(null)}>✕</button>
 
                                 {statsLoadingGame ? (
                                     <p>Loading stats...</p>
