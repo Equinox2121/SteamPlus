@@ -138,6 +138,34 @@
     z-index: 999;
 }
 
+
+
+
+.stats-dashboard.clickable {
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.stats-dashboard.clickable:hover {
+    background: rgba(40, 45, 60, 0.9);
+}
+
+.expanded-stats {
+    background: rgba(23, 26, 33, 0.95);
+    padding: 20px;
+    border-radius: 6px;
+    margin-top: -30px;
+    margin-bottom: 30px;
+    border-top: 1px solid #2a475e;
+}
+
+.expanded-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 20px;
+}
+
+
 /* Title */
 .modal-title {
     font-weight: bold;

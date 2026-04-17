@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
 import noAvatar from '../assets/NoAvatar.png';
 import statsIcon from '../assets/Stats_Icon.png';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, Cell } from 'recharts';
 import './Store.css';
 import './Profile.css';
 
@@ -16,6 +15,10 @@ function Profile() {
 
     const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0, totalGames: 0, accountLevel: 0 });
     const [statsLoading, setStatsLoading] = useState(false);
+
+    const [showExpanded, setShowExpanded] = useState(false);
+    const [extendedStats, setExtendedStats] = useState(null);
+    const [extendedLoading, setExtendedLoading] = useState(false);
 
     const [activeGameStats, setActiveGameStats] = useState(null);
     const [showOverlayId, setShowOverlayId] = useState(null);
@@ -56,6 +59,27 @@ function Profile() {
             })
             .catch(err => console.error("Stats fetch failed:", err))
             .finally(() => setStatsLoading(false));
+    };
+
+    const fetchExtendedStats = () => {
+        setExtendedLoading(true);
+
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-extended-stats`, {
+            credentials: 'include'
+        })
+            .then(res => res.json())
+            .then(data => setExtendedStats(data))
+            .catch(err => console.error(err))
+            .finally(() => setExtendedLoading(false));
+    };
+
+    const toggleExpandedStats = () => {
+        const next = !showExpanded;
+        setShowExpanded(next);
+
+        if (next && !extendedStats) {
+            fetchExtendedStats();
+        }
     };
 
     const fetchGameSpecificStats = (appid) => {
@@ -108,7 +132,7 @@ return (
                         <h2 style={{ margin: 0 }}>Welcome, {user.username}!</h2>
                     </div>
 
-                    <div className="stats-dashboard">
+                    <div className="stats-dashboard clickable" onClick={toggleExpandedStats}>
                         <div className="dash-stat">
                             <span className="label">Steam Level</span>
                             <span className="value">{stats.accountLevel}</span>
@@ -126,6 +150,46 @@ return (
                             <span className="value">{stats.activeGames}</span>
                         </div>
                     </div>
+
+                    {showExpanded && (
+    <div className="expanded-stats">
+        {extendedLoading ? (
+            <p>Loading advanced stats...</p>
+        ) : extendedStats && (
+            <>
+                <div className="expanded-grid">
+
+                    <div>
+                        <strong>Total Achievements</strong>
+                        <div>
+                            {extendedStats.totalAchievementsUnlocked} / {extendedStats.totalAchievements}
+                        </div>
+                    </div>
+
+                    <div>
+                        <strong>Favorite Genres</strong>
+                        <div>{extendedStats.topGenres?.join(", ") || "N/A"}</div>
+                    </div>
+
+                    <div>
+                        <strong>Most Played</strong>
+                        <div>
+                            {extendedStats.mostPlayed?.name} ({extendedStats.mostPlayed?.hours} hrs)
+                        </div>
+                    </div>
+
+                    <div>
+                        <strong>Average Playtime</strong>
+                        <div>{extendedStats.avgPlaytime} hrs</div>
+                    </div>
+
+                </div>
+
+
+            </>
+        )}
+    </div>
+)}
 
                     <h3 className="section-title">Your Steam Library</h3>
                     {gamesLoading ? (
