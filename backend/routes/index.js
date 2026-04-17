@@ -410,9 +410,7 @@ router.get("/steam/recommendations/:appid", async (req, res) => {
     }
 });
 
-
-
-// Fetch User Stats 
+// Basic user stats shown at top of profile (account level, recent playtime, total games owned, etc.) 
 router.get("/steam/user-stats", async (req, res) => {
     const token = req.cookies?.token;
     let user = null;
@@ -462,6 +460,99 @@ router.get("/steam/user-stats", async (req, res) => {
 
 
 
+router.get("/steam/user-extended-stats", async (req, res) => {
+    const token = req.cookies?.token;
+    let user = null;
+
+    if (token) {
+        try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
+    }
+    if (!user && req.user) user = req.user;
+    if (!user) return res.status(401).json({ error: "no auth" });
+
+    let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
+    if (steamId.includes('openid/id/')) {
+        steamId = steamId.split('openid/id/')[1];
+    }
+
+    try {
+        // --- FETCH LIBRARY ---
+        const ownedUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&include_appinfo=1&include_played_free_games=1`;
+        const ownedData = await fetch(ownedUrl).then(r => r.json());
+        const games = ownedData.response?.games || [];
+
+        // --- MOST PLAYED ---
+        const mostPlayed = games.reduce((max, g) => 
+            (!max || g.playtime_forever > max.playtime_forever) ? g : max
+        , null);
+
+        // --- AVG PLAYTIME ---
+        const totalMinutes = games.reduce((sum, g) => sum + g.playtime_forever, 0);
+        const avgPlaytime = games.length > 0 ? Math.round((totalMinutes / games.length) / 60) : 0;
+
+        // --- TAG FREQUENCY (SteamSpy) ---
+        const tagCounts = {};
+        const limitedGames = games.slice(0, 30); // prevent rate explosion
+
+        await Promise.all(limitedGames.map(async (g) => {
+            const spy = await fetchSteamSpy(g.appid);
+            if (spy?.tags) {
+                Object.keys(spy.tags).forEach(tag => {
+                    tagCounts[tag] = (tagCounts[tag] || 0) + 1;
+                });
+            }
+        }));
+
+        const topGenres = Object.entries(tagCounts)
+            .sort((a, b) => b[1] - a[1])
+            .slice(0, 3)
+            .map(t => t[0]);
+
+        // --- TOTAL ACHIEVEMENTS (sampled for performance) ---
+        let totalUnlocked = 0;
+        let totalAchievements = 0;
+
+        const sampleGames = games.slice(0, 20);
+
+        await Promise.all(sampleGames.map(async (g) => {
+            try {
+                const url = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${g.appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
+                const data = await fetch(url).then(r => r.json());
+
+                if (data.playerstats?.success) {
+                    const achs = data.playerstats.achievements || [];
+                    totalAchievements += achs.length;
+                    totalUnlocked += achs.filter(a => a.achieved === 1).length;
+                }
+            } catch {}
+        }));
+
+        // --- RECENT TREND ---
+        const recentUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}`;
+        const recentData = await fetch(recentUrl).then(r => r.json());
+
+        const trend = (recentData.response?.games || []).map(g => ({
+            name: g.name,
+            hours: Math.round(g.playtime_2weeks / 60)
+        }));
+
+        res.json({
+            totalAchievementsUnlocked: totalUnlocked,
+            totalAchievements,
+            topGenres,
+            mostPlayed: mostPlayed ? {
+                name: mostPlayed.name,
+                hours: Math.round(mostPlayed.playtime_forever / 60)
+            } : null,
+            avgPlaytime,
+            recentTrend: trend
+        });
+
+    } catch (e) {
+        console.error("extended stats error:", e);
+        res.status(500).json({ error: "failed extended stats" });
+    }
+});
 
 
 
@@ -469,78 +560,110 @@ router.get("/steam/user-stats", async (req, res) => {
 
 
 
-// Detailed Game Stats - Work in Progress
 
-// router.get("/steam/game-stats/:appid", async (req, res) => {
-//     const { appid } = req.params;
-//     const token = req.cookies?.token;
-//     let user = null;
-    
-//     // Auth Logic
-//     if (token) try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
-//     if (!user && req.user) user = req.user;
-//     if (!user) return res.status(401).json({ error: "no auth" });
 
-//     let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
-//     if (steamId.includes('openid/id/')) steamId = steamId.split('openid/id/')[1];
 
-//     try {
-//         const userAchUrl = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
-//         const globalAchUrl = `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${appid}`;
-//         const userStatsUrl = `https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
 
-//         // We use allSettled because GetUserStatsForGame often fails/returns 400 if a game doesn't support it
-//         const [userAchRes, globalAchRes, userStatsRes] = await Promise.allSettled([
-//             fetch(userAchUrl).then(r => r.json()),
-//             fetch(globalAchUrl).then(r => r.json()),
-//             fetch(userStatsUrl).then(r => r.json())
-//         ]);
 
-//         // 1. Process Achievements (Most Games)
-//         let achievements = [];
-//         let unlockedCount = 0;
-//         let totalCount = 0;
+// Cache for game stats
+const gameStatsCache = {};
 
-//         if (userAchRes.status === 'fulfilled' && userAchRes.value.playerstats?.success) {
-//             const uAchs = userAchRes.value.playerstats.achievements || [];
-//             const gAchs = (globalAchRes.status === 'fulfilled') ? globalAchRes.value.achievementpercentages.achievements : [];
+// Detailed Game Stats (Achievements + Game Stats (if available))
+router.get("/steam/game-stats/:appid", async (req, res) => {
+    const { appid } = req.params;
+    const token = req.cookies?.token;
+    let user = null;
 
-//             achievements = uAchs.map(ua => {
-//                 const ga = gAchs.find(g => g.name === ua.apiname);
-//                 return {
-//                     name: ua.apiname,
-//                     unlocked: ua.achieved === 1,
-//                     rarity: ga ? parseFloat(ga.percent).toFixed(1) : 0
-//                 };
-//             });
+    if (token) {
+        try { user = jwt.verify(token, process.env.JWT_SECRET); } catch (e) {}
+    }
+    if (!user && req.user) user = req.user;
+    if (!user) return res.status(401).json({ error: "no auth" });
 
-//             unlockedCount = uAchs.filter(a => a.achieved === 1).length;
-//             totalCount = uAchs.length;
-//         }
+    let steamId = user.steamid || (user._json && user._json.steamid) || user.id;
+    if (steamId.includes('openid/id/')) {
+        steamId = steamId.split('openid/id/')[1];
+    }
 
-//         let customStats = [];
-//         if (userStatsRes.status === 'fulfilled' && userStatsRes.value.playerstats?.stats) {
-//             customStats = userStatsRes.value.playerstats.stats.map(s => ({
-//                 label: s.name.replace(/_/g, ' '), 
-//                 value: s.value
-//             }));
-//         }
+    const cacheKey = `${steamId}_${appid}`;
+    if (gameStatsCache[cacheKey]) {
+        return res.json(gameStatsCache[cacheKey]);
+    }
 
-//         res.json({
-//             appid,
-//             unlocked: unlockedCount,
-//             total: totalCount,
-//             percentage: totalCount > 0 ? Math.round((unlockedCount / totalCount) * 100) : 0,
-//             achievements: achievements.sort((a, b) => a.rarity - b.rarity), 
-//             customStats: customStats 
-//         });
+    try {
+        const userAchUrl = `https://api.steampowered.com/ISteamUserStats/GetPlayerAchievements/v0001/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
+        const globalAchUrl = `https://api.steampowered.com/ISteamUserStats/GetGlobalAchievementPercentagesForApp/v0002/?gameid=${appid}`;
+        const schemaUrl = `https://api.steampowered.com/ISteamUserStats/GetSchemaForGame/v2/?key=${STEAM_API_KEY}&appid=${appid}`;
+        const userStatsUrl = `https://api.steampowered.com/ISteamUserStats/GetUserStatsForGame/v0002/?appid=${appid}&key=${STEAM_API_KEY}&steamid=${steamId}`;
 
-//     } catch (e) {
-//         console.error("Steam Stats Error:", e);
-//         res.status(500).json({ error: "Failed to fetch game statistics" });
-//     }
-// });
+        const [userAchRes, globalAchRes, schemaRes, userStatsRes] = await Promise.allSettled([
+            fetch(userAchUrl).then(r => r.json()),
+            fetch(globalAchUrl).then(r => r.json()),
+            fetch(schemaUrl).then(r => r.json()),
+            fetch(userStatsUrl).then(r => r.json())
+        ]);
 
+        // --- Achievements ---
+        let achievements = [];
+        let unlockedCount = 0;
+        let totalCount = 0;
+
+        if (userAchRes.status === 'fulfilled' && userAchRes.value.playerstats?.success) {
+            const uAchs = userAchRes.value.playerstats.achievements || [];
+            const gAchs = globalAchRes.status === 'fulfilled'
+                ? globalAchRes.value.achievementpercentages?.achievements || []
+                : [];
+            const schemaAchs = schemaRes.status === 'fulfilled'
+                ? schemaRes.value.game?.availableGameStats?.achievements || []
+                : [];
+
+            achievements = uAchs.map(ua => {
+                const meta = schemaAchs.find(s => s.name === ua.apiname);
+                const ga = gAchs.find(g => g.name === ua.apiname);
+
+                return {
+                    name: meta?.displayName || ua.apiname,
+                    description: meta?.description || "",
+                    icon: meta?.icon || null,
+                    unlocked: ua.achieved === 1,
+                    rarity: ga ? parseFloat(ga.percent).toFixed(1) : 0
+                };
+            });
+
+            unlockedCount = uAchs.filter(a => a.achieved === 1).length;
+            totalCount = uAchs.length;
+        }
+
+        // --- Custom Stats (optional) ---
+        let customStats = [];
+        if (userStatsRes.status === 'fulfilled' && userStatsRes.value.playerstats?.stats) {
+            customStats = userStatsRes.value.playerstats.stats.map(s => ({
+                label: s.name.replace(/_/g, ' '),
+                value: s.value
+            }));
+        }
+
+        const responseData = {
+            appid,
+            unlocked: unlockedCount,
+            total: totalCount,
+            percentage: totalCount > 0
+                ? Math.round((unlockedCount / totalCount) * 100)
+                : 0,
+            achievements: achievements.sort((a, b) => a.rarity - b.rarity),
+            customStats
+        };
+
+        // cache result
+        gameStatsCache[cacheKey] = responseData;
+
+        res.json(responseData);
+
+    } catch (e) {
+        console.error("Steam Stats Error:", e);
+        res.status(500).json({ error: "Failed to fetch game statistics" });
+    }
+});
 
 
 

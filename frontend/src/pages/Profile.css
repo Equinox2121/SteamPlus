@@ -119,3 +119,92 @@
     color: #8f98a0;
     margin-top: 2px;
 }
+
+
+
+
+
+
+.stats-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+/* Title */
+.modal-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.achievements-header {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 10px;
+}
+
+.achievement-progress {
+    font-weight: 500;
+}
+
+/* Close button */
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    opacity: 0.7;
+}
+
+.stats-modal {
+    position: relative;
+    background: #1b2838;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    color: white;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    justify-items: center;
+}
+
+.achievement {
+    width: 80px;
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.achievement.unlocked {
+    opacity: 1;
+}
+
+.achievement.locked img {
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
+
+.achievement img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}

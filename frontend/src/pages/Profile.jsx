@@ -17,8 +17,9 @@ function Profile() {
     const [stats, setStats] = useState({ recentPlaytime: 0, activeGames: 0, totalGames: 0, accountLevel: 0 });
     const [statsLoading, setStatsLoading] = useState(false);
 
-    // const [activeGameStats, setActiveGameStats] = useState(null); 
-    // const [showOverlayId, setShowOverlayId] = useState(null);
+    const [activeGameStats, setActiveGameStats] = useState(null);
+    const [showOverlayId, setShowOverlayId] = useState(null);
+    const [statsLoadingGame, setStatsLoadingGame] = useState(false);
 
     
     const navigate = useNavigate();
@@ -50,24 +51,29 @@ function Profile() {
                     recentPlaytime: data.recentPlaytimeHrs || 0,
                     activeGames: data.recentGamesCount || 0,
                     totalGames: data.totalGamesOwned || 0,
-                    accountLevel: data.playerLevel || 0 
+                    accountLevel: data.steamLevel || 0
                 });
             })
             .catch(err => console.error("Stats fetch failed:", err))
             .finally(() => setStatsLoading(false));
     };
 
-    // const fetchGameSpecificStats = (appid) => {
-    //     setShowOverlayId(appid);
-    //     setActiveGameStats(null); 
-    //     fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/game-stats/${appid}`, { credentials: 'include' })
-    //         .then(res => res.json())
-    //         .then(data => setActiveGameStats(data))
-    //         .catch(err => {
-    //             console.error(err);
-    //             setShowOverlayId(null);
-    //         });
-    // };
+    const fetchGameSpecificStats = (appid) => {
+        setShowOverlayId(appid);
+        setActiveGameStats(null);
+        setStatsLoadingGame(true);
+
+        fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/game-stats/${appid}`, {
+            credentials: 'include'
+        })
+            .then(res => res.json())
+            .then(data => setActiveGameStats(data))
+            .catch(err => {
+                console.error(err);
+                setShowOverlayId(null);
+            })
+            .finally(() => setStatsLoadingGame(false));
+    };
 
     useEffect(() => {
         if (user) {
@@ -145,7 +151,7 @@ return (
                                             <div className="game-name-text">{game.name}</div>
                                             <button className="stats-icon-btn" onClick={(e) => {
                                                     e.stopPropagation(); 
-                                                    // fetchGameSpecificStats(game.appid);
+                                                    fetchGameSpecificStats(game.appid);
                                                 }}
                                             >
                                                 <img src={statsIcon} alt="Stats" />
@@ -159,6 +165,60 @@ return (
                                     </div>
                                 </div>
                             ))}
+                        </div>
+                    )}
+                    {showOverlayId && (
+                        <div className="stats-overlay" onClick={() => setShowOverlayId(null)}>
+                            <div className="stats-modal" onClick={(e) => e.stopPropagation()}>
+
+                                {/* CLOSE BUTTON */}
+                                <button 
+                                    className="close-btn"
+                                    onClick={() => setShowOverlayId(null)}
+                                >
+                                    ✕
+                                </button>
+
+                                {statsLoadingGame ? (
+                                    <p>Loading stats...</p>
+                                ) : activeGameStats ? (
+                                    <>
+                                        <h3 className="modal-title">Game Stats</h3>
+
+                                        <div className="achievements-header">
+                                            <h4>Achievements:</h4>
+                                            <span className="achievement-progress">
+                                                {activeGameStats.unlocked} / {activeGameStats.total} Unlocked
+                                            </span>
+                                        </div>
+
+                                        <div className="achievements-grid">
+                                            {activeGameStats.achievements.slice(0, 12).map((ach, i) => (
+                                                <div key={i} className={`achievement ${ach.unlocked ? 'unlocked' : 'locked'}`}>
+                                                    {ach.icon && <img src={ach.icon} alt={ach.name} />}
+                                                    <div>{ach.name}</div>
+                                                    <small>{ach.rarity}% players</small>
+                                                </div>
+                                            ))}
+                                        </div>
+
+                                        {activeGameStats.customStats.length > 0 && (
+                                            <>
+                                                <h4>Game Stats</h4>
+                                                <ul>
+                                                    {activeGameStats.customStats.slice(0, 5).map((s, i) => (
+                                                        <li key={i}>
+                                                            <strong>{s.label}:</strong> {s.value}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </>
+                                        )}
+                                    </>
+                                ) : (
+                                    <p>No stats available.</p>
+                                )}
+                            </div>
                         </div>
                     )}
                 </>
