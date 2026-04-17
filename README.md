@@ -31,5 +31,6 @@ and frontend:
 
 both can be located in the `package.json` scripts.
 
+## Developer Configuration
 
-    
+Access `frontend/src/settings.js` to enable Developer Mode.

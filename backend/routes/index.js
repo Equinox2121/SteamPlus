@@ -5,6 +5,14 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/database.js");
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware'); // ***USE THIS FOR ANY ROUTES THAT REQUIRE AUTH
+const {
+    buildUserTasteProfile,
+    computeCandidateStats,
+    scoreCandidateForUser,
+    rerankForDiversity,
+    categorizeRecommendations,
+    defaultDailySeed
+} = require("../services/recommendationEngine");
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
@@ -227,6 +235,30 @@ router.get("/steam/library", (req, res) => {
         console.error("api error", err);
         res.status(502).json({ error: "cant get steam" });
     });
+});
+
+router.get("/steam/top-games", async (req, res) => {
+    const requestedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+        ? Math.min(Math.floor(requestedLimit), 200)
+        : 50;
+
+    try {
+        const [rows] = await pool.execute(
+            `
+                SELECT app_id, name, owners, owners_estimate, players_2weeks, average_forever, median_forever, score_rank, header_image, updated_at
+                FROM steam_top_games
+                ORDER BY score_rank ASC
+                LIMIT ?
+            `,
+            [limit]
+        );
+
+        return res.json({ games: rows });
+    } catch (error) {
+        console.error("Failed to load preloaded Steam top games:", error.message);
+        return res.json({ games: [] });
+    }
 });
 
 
@@ -457,6 +489,337 @@ async function fetchSteamSpy(appid) {
     return null;
 }
 
+async function fetchSteamSpyBatch(appIds, concurrency = 12) {
+    const ids = [...new Set(
+        (Array.isArray(appIds) ? appIds : [])
+            .map((value) => Number(value))
+            .filter((value) => Number.isFinite(value) && value > 0)
+    )];
+
+    if (!ids.length) return new Map();
+
+    const results = new Map();
+    let cursor = 0;
+    const workerCount = Math.max(1, Math.min(concurrency, ids.length));
+
+    const workers = Array.from({ length: workerCount }, async () => {
+        while (cursor < ids.length) {
+            const index = cursor;
+            cursor += 1;
+            const appid = ids[index];
+
+            try {
+                const spy = await fetchSteamSpy(appid);
+                if (spy && spy.tags) {
+                    results.set(appid, spy);
+                }
+            } catch (error) {
+                console.error(`SteamSpy batch fetch failed for ${appid}:`, error.message);
+            }
+        }
+    });
+
+    await Promise.all(workers);
+    return results;
+}
+
+function buildRecommendationCard(row, reason = "Popular on Steam right now") {
+    const gameId = Number(row.app_id);
+    return {
+        appid: gameId,
+        name: row.name,
+        header_image: row.header_image || `https://cdn.cloudflare.steamstatic.com/steam/apps/${gameId}/header.jpg`,
+        price: "View on Steam",
+        relevance: 0,
+        confidence: 0,
+        reason,
+        signals: null,
+        tags: []
+    };
+}
+
+function buildRecommendationMeta(options = {}) {
+    const {
+        mode = "personalized",
+        ownedGames = 0,
+        profileGamesUsed = 0,
+        profileTagCount = 0,
+        candidatePool = 0,
+        scoredCandidates = 0,
+        limit = 12,
+        seed = null,
+        recommendations = []
+    } = options;
+
+    const cards = Array.isArray(recommendations) ? recommendations : [];
+    const avgRelevance = cards.length
+        ? Number((cards.reduce((sum, card) => sum + Number(card?.relevance || 0), 0) / cards.length).toFixed(2))
+        : 0;
+    const avgConfidence = cards.length
+        ? Math.round(cards.reduce((sum, card) => sum + Number(card?.confidence || 0), 0) / cards.length)
+        : 0;
+
+    return {
+        algorithm: "steam-owned-v3.0",
+        mode,
+        ownedGames,
+        profileGamesUsed,
+        profileTagCount,
+        candidatePool,
+        scoredCandidates,
+        requestedLimit: limit,
+        returned: cards.length,
+        avgRelevance,
+        avgConfidence,
+        seed,
+        generatedAt: new Date().toISOString()
+    };
+}
+
+const parseTags = (raw) => {
+    if (!raw) return null;
+    if (typeof raw === "object") return raw;
+    try { return JSON.parse(raw); } catch (e) { return null; }
+};
+
+function mergeRecommendations(primary, fallback, limit) {
+    const merged = [];
+    const seen = new Set();
+
+    const addCandidate = (candidate) => {
+        const appid = Number(candidate?.appid);
+        if (!Number.isFinite(appid) || seen.has(appid)) return;
+        seen.add(appid);
+        merged.push(candidate);
+    };
+
+    (Array.isArray(primary) ? primary : []).forEach(addCandidate);
+    (Array.isArray(fallback) ? fallback : []).forEach(addCandidate);
+
+    return merged.slice(0, limit);
+}
+
+
+
+
+router.get("/steam/recommendations/owned", async (req, res) => {
+    const requestedLimit = Number(req.query.limit);
+    const limit = Number.isFinite(requestedLimit) && requestedLimit > 0
+        ? Math.min(Math.floor(requestedLimit), 24)
+        : 12;
+
+    const token = req.cookies?.token;
+    let user = null;
+
+    if (token) {
+        try {
+            user = jwt.verify(token, process.env.JWT_SECRET);
+        } catch (error) {
+            console.error("JWT verify error in owned recommendations route:", error.message);
+        }
+    }
+
+    if (!user && req.user) {
+        user = req.user;
+    }
+
+    if (!user) {
+        return res.status(401).json({ error: "no auth" });
+    }
+
+    let steamId = user.steamid || (user._json && (user._json.steamid || user._json.steamid64)) || user.id;
+    if (steamId && typeof steamId === "string" && steamId.includes("https://steamcommunity.com/openid/id/")) {
+        steamId = steamId.split("https://steamcommunity.com/openid/id/")[1];
+    }
+
+    const isActuallySteamId = steamId && typeof steamId === "string" && steamId.length >= 15 && /^\d+$/.test(steamId);
+    if (!isActuallySteamId) {
+        return res.status(400).json({ error: "steamid not found or invalid" });
+    }
+
+    if (!STEAM_API_KEY) {
+        return res.status(500).json({ error: "Steam API key not configured" });
+    }
+
+    try {
+        const seedParam = Number(req.query.seed);
+        const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : defaultDailySeed();
+
+        const ownedGamesUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${steamId}&include_played_free_games=1&format=json`;
+        const ownedResponse = await fetchSteamJson(ownedGamesUrl);
+        const ownedGames = (ownedResponse.data && ownedResponse.data.response && ownedResponse.data.response.games) || [];
+
+        const [topGamesRows] = await pool.execute(
+            `
+                SELECT app_id, name, owners_estimate, players_2weeks, average_forever, median_forever, score_rank, header_image, tags
+                FROM steam_top_games
+                ORDER BY score_rank ASC
+                LIMIT 2000
+            `
+        );
+
+        const dbTagsByAppId = new Map();
+        for (const row of topGamesRows) {
+            const tags = parseTags(row.tags);
+            if (tags && typeof tags === "object") {
+                dbTagsByAppId.set(Number(row.app_id), { name: row.name, tags });
+            }
+        }
+
+        const ownedAppIds = new Set(ownedGames.map((g) => Number(g.appid)).filter((id) => Number.isFinite(id)));
+        const nonOwnedRows = topGamesRows.filter((row) => !ownedAppIds.has(Number(row.app_id)));
+
+        const fallbackRecommendations = nonOwnedRows
+            .slice(0, limit)
+            .map((row) => buildRecommendationCard(row, "Popular with Steam players"));
+
+        if (!ownedGames.length) {
+            return res.json({
+                recommendations: fallbackRecommendations,
+                categories: null,
+                meta: buildRecommendationMeta({
+                    mode: "fallback_no_owned_games",
+                    ownedGames: 0,
+                    candidatePool: nonOwnedRows.length,
+                    limit,
+                    seed,
+                    recommendations: fallbackRecommendations
+                })
+            });
+        }
+
+        const profileGames = [...ownedGames]
+            .sort((a, b) => (b.playtime_forever || 0) - (a.playtime_forever || 0))
+            .slice(0, 50);
+
+        const candidatePool = nonOwnedRows.slice(0, 1000);
+
+        const steamSpyMap = new Map();
+        for (const [appId, entry] of dbTagsByAppId.entries()) {
+            steamSpyMap.set(appId, entry);
+        }
+        const missingOwnedIds = profileGames
+            .map((g) => Number(g.appid))
+            .filter((id) => Number.isFinite(id) && !steamSpyMap.has(id));
+        if (missingOwnedIds.length) {
+            const fetched = await fetchSteamSpyBatch(missingOwnedIds, 8);
+            for (const [appId, spy] of fetched.entries()) {
+                if (spy?.tags) steamSpyMap.set(appId, spy);
+            }
+        }
+
+        const userProfile = buildUserTasteProfile(profileGames, steamSpyMap, {
+            maxGames: 50,
+            profileTagLimit: 16
+        });
+
+        if (!userProfile.tagCount) {
+            return res.json({
+                recommendations: fallbackRecommendations,
+                categories: null,
+                meta: buildRecommendationMeta({
+                    mode: "fallback_no_profile_tags",
+                    ownedGames: ownedGames.length,
+                    profileGamesUsed: userProfile.gamesUsed,
+                    profileTagCount: userProfile.tagCount,
+                    candidatePool: candidatePool.length,
+                    limit,
+                    seed,
+                    recommendations: fallbackRecommendations
+                })
+            });
+        }
+
+        const candidateStats = computeCandidateStats(candidatePool);
+        const scoredRecommendations = [];
+
+        for (const row of candidatePool) {
+            const gameId = Number(row.app_id);
+            if (!Number.isFinite(gameId) || ownedAppIds.has(gameId)) continue;
+
+            const spyData = steamSpyMap.get(gameId);
+            if (!spyData?.tags) continue;
+
+            const scored = scoreCandidateForUser({
+                candidateRow: row,
+                candidateSpy: spyData,
+                userProfile,
+                candidateStats,
+                options: { candidateTagLimit: 10 }
+            });
+
+            if (scored) {
+                scoredRecommendations.push(scored);
+            }
+        }
+
+
+        const rankedRecommendations = rerankForDiversity(scoredRecommendations, limit, { lambda: 0.72, seed, noise: 0.14 })
+            .map(({ _score, _tagSet, ...card }) => card);
+
+        const recommendations = mergeRecommendations(rankedRecommendations, fallbackRecommendations, limit);
+
+
+        const categories = categorizeRecommendations(scoredRecommendations, userProfile, { seed, perCategory: 6 });
+        const cleanCategory = (items) => items.map(({ _score, _tagSet, ...card }) => card);
+        const categorized = {
+            topPicks: cleanCategory(categories.topPicks),
+            becauseYouPlay: cleanCategory(categories.becauseYouPlay),
+            trending: cleanCategory(categories.trending),
+            deepDives: cleanCategory(categories.deepDives),
+            discoveries: cleanCategory(categories.discoveries)
+        };
+
+        const candidatesWithDbTags = candidatePool.filter((r) => dbTagsByAppId.has(Number(r.app_id))).length;
+        console.log("[owned-recs] debug:", {
+            steamId,
+            ownedGames: ownedGames.length,
+            profileGamesUsed: userProfile.gamesUsed,
+            profileTagCount: userProfile.tagCount,
+            profileTopTags: userProfile.topTags,
+            candidatePool: candidatePool.length,
+            candidatesWithDbTags,
+            dbTagsTotalRows: dbTagsByAppId.size,
+            ownedFetchedFromSpy: missingOwnedIds.length,
+            scoredCandidates: scoredRecommendations.length,
+            rankedReturned: rankedRecommendations.length,
+            categorySizes: {
+                topPicks: categorized.topPicks.length,
+                becauseYouPlay: categorized.becauseYouPlay.length,
+                trending: categorized.trending.length,
+                deepDives: categorized.deepDives.length,
+                discoveries: categorized.discoveries.length
+            },
+            sampleScored: scoredRecommendations.slice(0, 3).map((c) => ({
+                appid: c.appid,
+                name: c.name,
+                relevance: c.relevance,
+                confidence: c.confidence,
+                signals: c.signals,
+                tags: c.tags
+            }))
+        });
+
+        return res.json({
+            recommendations,
+            categories: categorized,
+            meta: buildRecommendationMeta({
+                mode: rankedRecommendations.length ? "personalized" : "fallback_merge",
+                ownedGames: ownedGames.length,
+                profileGamesUsed: userProfile.gamesUsed,
+                profileTagCount: userProfile.tagCount,
+                candidatePool: candidatePool.length,
+                scoredCandidates: scoredRecommendations.length,
+                limit,
+                seed,
+                recommendations
+            })
+        });
+    } catch (error) {
+        console.error("Owned recommendations error:", error.message);
+        return res.status(500).json({ error: "failed to get owned recommendations" });
+    }
+});
 
 router.get("/steam/recommendations/:appid", async (req, res) => {
     const { appid } = req.params;
@@ -465,90 +828,83 @@ router.get("/steam/recommendations/:appid", async (req, res) => {
     }
 
     try {
-
-        const currentSpyData = await fetchSteamSpy(appid);
-        const currentTags = currentSpyData && currentSpyData.tags ? Object.keys(currentSpyData.tags) : [];
-        
-
-        const featuredUrl = "https://store.steampowered.com/api/featured/";
-        const categoriesUrl = "https://store.steampowered.com/api/featuredcategories/";
-        
-        const [featuredData, categoriesData] = await Promise.all([
-            new Promise((resolve, reject) => {
-                https.get(featuredUrl, (apiRes) => {
-                    if (apiRes.statusCode !== 200) {
-                        return reject(new Error(`Steam featured API returned status ${apiRes.statusCode}`));
-                    }
-                    let d = "";
-                    apiRes.on("data", (chunk) => (d += chunk));
-                    apiRes.on("end", () => {
-                        try {
-                            resolve(JSON.parse(d));
-                        } catch (e) {
-                            reject(e);
-                        }
-                    });
-                }).on("error", reject);
-            }),
-            new Promise((resolve, reject) => {
-                https.get(categoriesUrl, (apiRes) => {
-                    if (apiRes.statusCode !== 200) {
-                        return reject(new Error(`Steam categories API returned status ${apiRes.statusCode}`));
-                    }
-                    let d = "";
-                    apiRes.on("data", (chunk) => (d += chunk));
-                    apiRes.on("end", () => {
-                        try {
-                            resolve(JSON.parse(d));
-                        } catch (e) {
-                            reject(e);
-                        }
-                    });
-                }).on("error", reject);
-            })
-        ]);
+        const seedParam = Number(req.query.seed);
+        const seed = Number.isFinite(seedParam) && seedParam > 0 ? seedParam : defaultDailySeed();
 
 
-        const pool = (categoriesData.top_sellers?.items || [])
-            .filter(g => g && (g.id || g.appid) && (g.id || g.appid).toString() !== appid);
+        const [currentRow] = await pool.execute(
+            "SELECT app_id, name, header_image, tags, score_rank, owners_estimate, players_2weeks, average_forever, median_forever FROM steam_top_games WHERE app_id = ?",
+            [Number(appid)]
+        );
 
-        const uniquePool = [];
-        const seen = new Set();
-        for (const g of pool) {
-            const gid = g.id || g.appid;
-            if (gid && !seen.has(gid)) {
-                seen.add(gid);
-                uniquePool.push(g);
-            }
-            if (uniquePool.length >= 20) break;
-        }
-
-
-        const recommendations = [];
-        for (const game of uniquePool) {
-            const gameId = game.id || game.appid;
-            const spyData = await fetchSteamSpy(gameId);
-            
-            if (spyData && spyData.tags) {
-                const tags = Object.keys(spyData.tags);
-                const overlap = tags.filter(t => currentTags.includes(t));
-                
-                if (overlap.length > 0 || currentTags.length === 0) {
-                    recommendations.push({
-                        appid: gameId,
-                        name: spyData.name || game.name,
-                        header_image: `https://cdn.cloudflare.steamstatic.com/steam/apps/${gameId}/header.jpg`,
-                        price: game.final_price ? (game.final_price / 100).toFixed(2) + " " + (game.currency || "USD") : "Free",
-                        relevance: overlap.length,
-                        tags: tags.slice(0, 3)
-                    });
-                }
+        let currentSpyData = null;
+        if (currentRow.length > 0) {
+            const row = currentRow[0];
+            const tags = parseTags(row.tags);
+            if (tags) {
+                currentSpyData = { name: row.name, tags };
             }
         }
 
-        recommendations.sort((a, b) => b.relevance - a.relevance);
+        if (!currentSpyData) {
+            currentSpyData = await fetchSteamSpy(appid);
+        }
 
-        res.json({ recommendations: recommendations.slice(0, 6) });
+        if (!currentSpyData || !currentSpyData.tags) {
+
+            return res.json({ recommendations: [] });
+        }
+
+
+        const steamSpyMap = new Map();
+        steamSpyMap.set(Number(appid), currentSpyData);
+        
+        const mockProfile = buildUserTasteProfile(
+            [{ appid: Number(appid), playtime_forever: 100 }],
+            steamSpyMap,
+            { profileTagLimit: 24 }
+        );
+
+
+        const [topGamesRows] = await pool.execute(
+            `
+                SELECT app_id, name, owners_estimate, players_2weeks, average_forever, median_forever, score_rank, header_image, tags
+                FROM steam_top_games
+                WHERE app_id <> ?
+                ORDER BY score_rank ASC
+                LIMIT 1000
+            `,
+            [Number(appid)]
+        );
+
+        const candidateStats = computeCandidateStats(topGamesRows);
+        const scoredRecommendations = [];
+
+        for (const row of topGamesRows) {
+            const tags = parseTags(row.tags);
+            if (!tags) continue;
+
+            const scored = scoreCandidateForUser({
+                candidateRow: row,
+                candidateSpy: { name: row.name, tags },
+                userProfile: mockProfile,
+                candidateStats,
+                options: { candidateTagLimit: 12 }
+            });
+
+            if (scored) {
+                scoredRecommendations.push(scored);
+            }
+        }
+
+
+        const rankedRecommendations = rerankForDiversity(scoredRecommendations, 6, { 
+            lambda: 0.62, 
+            seed, 
+            noise: 0.04 
+        }).map(({ _score, _tagSet, ...card }) => card);
+
+        res.json({ recommendations: rankedRecommendations });
     } catch (e) {
         console.error("recommendations error", e);
         res.status(500).json({ error: "failed to get recommendations" });
