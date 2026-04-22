@@ -1,0 +1,246 @@
+.game-page-container {
+    padding: 20px;
+    background: #1b2838;
+    color: #ffffff;
+    min-height: calc(100vh - 80px); /* Adjust based on navbar height */
+    font-family: "Motiva Sans", Arial, Helvetica, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.game-page-header {
+    width: 100%;
+    max-width: 940px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.game-page-header h1 {
+    font-size: 26px;
+    margin: 0;
+    color: #ffffff;
+}
+
+.back-btn {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: #ffffff;
+    padding: 8px 16px;
+    cursor: pointer;
+    border-radius: 2px;
+}
+
+.back-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.game-page-content {
+    width: 100%;
+    max-width: 940px;
+    background: linear-gradient(to right, rgba(0,0,0,0.5), rgba(0,0,0,0.2));
+    padding: 20px;
+    border-radius: 4px;
+}
+
+.game-main-info {
+    display: flex;
+    gap: 20px;
+}
+
+.game-image-gallery {
+    flex: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.main-header-image {
+    width: 100%;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.screenshots-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.screenshot-item {
+    width: 100%;
+    height: 70px;
+    object-fit: cover;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: border-color 0.2s;
+}
+
+.screenshot-item:hover {
+    border-color: #66c0f4;
+}
+
+.game-sidebar {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.sidebar-header-image {
+    width: 100%;
+    display: none;
+}
+
+.game-description {
+    font-size: 14px;
+    line-height: 1.5;
+    color: #c6d4df;
+    margin-bottom: 10px;
+}
+
+.game-genres {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.genre-tag {
+    background: rgba(103, 192, 244, 0.2);
+    color: #67c0f4;
+    padding: 3px 8px;
+    border-radius: 2px;
+    font-size: 12px;
+    text-transform: uppercase;
+}
+
+.game-purchase-section {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 15px;
+    border-radius: 4px;
+    margin-top: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.price-tag {
+    font-size: 18px;
+    color: #ffffff;
+    font-weight: bold;
+}
+
+.visit-steam-btn {
+    background: linear-gradient(to right, #75b022 5%, #588a1b 95%);
+    color: #ffffff;
+    text-decoration: none;
+    padding: 12px;
+    text-align: center;
+    border-radius: 4px;
+    font-weight: bold;
+    transition: background 0.2s;
+}
+
+.visit-steam-btn:hover {
+    background: linear-gradient(to right, #8ed629 5%, #6aa621 95%);
+}
+
+.game-page-loading, .game-page-error {
+    color: #ffffff;
+    padding: 100px;
+    text-align: center;
+    font-size: 18px;
+}
+
+@media (max-width: 768px) {
+    .game-main-info {
+        flex-direction: column;
+    }
+    
+    .screenshots-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Recommendations Section */
+.recommendations-section {
+    width: 100%;
+    max-width: 940px;
+    margin-top: 40px;
+}
+
+.recommendations-section h2 {
+    font-size: 18px;
+    color: #ffffff;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.recommendations-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 20px;
+}
+
+.rec-card {
+    background: rgba(0, 0, 0, 0.4);
+    border-radius: 4px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.2s;
+}
+
+.rec-card:hover {
+    transform: translateY(-5px);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.rec-image {
+    width: 100%;
+    height: 110px;
+    object-fit: cover;
+}
+
+.rec-info {
+    padding: 10px;
+}
+
+.rec-name {
+    font-size: 14px;
+    color: #ffffff;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.rec-genres {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 5px;
+}
+
+.rec-genre {
+    font-size: 10px;
+    color: #67c0f4;
+    background: rgba(103, 192, 244, 0.1);
+    padding: 1px 4px;
+    border-radius: 2px;
+}
+
+.rec-price {
+    font-size: 12px;
+    color: #c6d4df;
+}
+
+.recs-loading, .no-recs {
+    padding: 20px;
+    text-align: center;
+    color: #c6d4df;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+}

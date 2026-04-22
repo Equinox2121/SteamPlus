@@ -1,0 +1,99 @@
+:root {
+  font-family: "Motiva Sans", Sans-serif, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: dark;
+  color: #c6d4df;
+  background-color: #1b2838;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+
+  /* Steam Colors */
+  --steam-bg-dark: #171a21;
+  --steam-bg-main: #1b2838;
+  --steam-bg-light: #2a475e;
+  --steam-bg-nav: #171d25;
+  --steam-blue-primary: #66c0f4;
+  --steam-blue-secondary: #4b619b;
+  --steam-blue-highlight: #1a9fff;
+  --steam-text-main: #c6d4df;
+  --steam-text-muted: #8f98a0;
+  --steam-green-btn-start: #5c7e10;
+  --steam-green-btn-end: #89b52a;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 14px;
+}
+::-webkit-scrollbar-track {
+  background: #171a21;
+}
+::-webkit-scrollbar-thumb {
+  background: #3d4450;
+  border: 3px solid #171a21;
+  border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #4e5664;
+}
+
+a {
+  font-weight: 500;
+  color: var(--steam-blue-primary);
+  text-decoration: none;
+}
+a:hover {
+  color: #ffffff;
+}
+
+body {
+  margin: 0;
+  min-width: 320px;
+  min-height: 100vh;
+  background: radial-gradient(farthest-corner at 50% 0, #20364b 0%, #1b2838 100%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: #ffffff;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  font-weight: 200;
+  margin-top: 0;
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 2px;
+  border: none;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 400;
+  font-family: inherit;
+  background: linear-gradient( to right, var(--steam-green-btn-start) 0%, var(--steam-green-btn-end) 100%);
+  color: #d2efa9;
+  cursor: pointer;
+  transition: filter 0.25s, box-shadow 0.2s;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+}
+button:hover {
+  filter: brightness(1.2);
+  color: #ffffff;
+  box-shadow: 2px 2px 10px rgba(0,0,0,0.8);
+}
+button:active {
+  transform: translateY(1px);
+}
+button:focus,
+button:focus-visible {
+  outline: 1px solid var(--steam-blue-primary);
+}
