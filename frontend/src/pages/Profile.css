@@ -1,0 +1,235 @@
+.home-container {
+    padding: 40px;
+    min-height: 100vh;
+    color: white;
+}
+
+.header-section {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 30px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid #2a475e;
+}
+
+.avatar-img {
+    width: 50px;
+    height: 50px;
+    border-radius: 4px;
+    border: 1px solid #66c0f4;
+}
+
+.stats-dashboard {
+    background: rgba(23, 26, 33, 0.9);
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    margin-bottom: 40px;
+    border-radius: 4px;
+    position: relative;
+}
+
+.stats-row {
+    display: flex;
+    cursor: pointer;
+}
+
+.expanded-row {
+    display: flex;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #2a475e;
+}
+
+.stats-toggle {
+    position: absolute;
+    bottom: 8px;
+    right: 14px;
+    font-size: 11px;
+    color: #66c0f4;
+    cursor: pointer;
+    opacity: 0.8;
+    transition: opacity 0.2s ease;
+}
+
+.stats-toggle:hover {
+    opacity: 1;
+    text-decoration: underline;
+}
+
+.dash-stat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 0 20px;
+}
+
+.dash-stat .label {
+    color: #8f98a0;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.dash-stat .value {
+    font-size: 22px;
+    font-weight: bold;
+    color: #66c0f4;
+}
+
+.border-left {
+    border-left: 1px solid #2a475e;
+}
+
+.value.small {
+    padding-top: 4px;
+    font-size: 16px;
+}
+
+.library-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    gap: 20px;
+}
+
+.game-info {
+    padding: 12px;
+    background: #12141a;
+    display: flex;
+    flex-direction: column;
+}
+
+.game-name-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+}
+
+.game-name-text {
+    font-weight: 500;
+    color: #ffffff;
+    font-size: 14px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex-grow: 1;
+}
+
+.playtime-text {
+    font-size: 11px;
+    color: #8f98a0;
+    margin-top: 2px;
+}
+
+.stats-icon-btn {
+    background: rgba(102, 192, 244, 0.1);
+    border: 1px solid rgba(102, 192, 244, 0.2);
+    border-radius: 4px;
+    cursor: pointer;
+    width: 26px;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+    padding: 4px;
+}
+
+.stats-icon-btn:hover {
+    background: rgba(102, 192, 244, 0.3);
+    border-color: #66c0f4;
+    transform: scale(1.05);
+}
+
+.stats-icon-btn img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: brightness(0) saturate(100%) invert(83%) sepia(21%) saturate(735%) hue-rotate(178deg) brightness(101%) contrast(93%);
+}
+
+.stats-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 999;
+}
+
+.stats-modal {
+    position: relative;
+    background: #1b2838;
+    padding: 20px;
+    border-radius: 10px;
+    max-width: 600px;
+    width: 90%;
+    color: white;
+}
+
+.close-btn {
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    background: transparent;
+    border: none;
+    font-size: 18px;
+    color: white;
+    cursor: pointer;
+}
+
+.close-btn:hover {
+    opacity: 0.7;
+}
+
+.modal-title {
+    font-weight: bold;
+    margin-bottom: 10px;
+}
+
+.achievements-header {
+    display: flex;
+    gap: 25px;
+    margin-bottom: 10px;
+}
+
+.achievement-progress {
+    font-weight: 500;
+}
+
+.achievements-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 10px;
+    justify-items: center;
+}
+
+.achievement {
+    width: 80px;
+    text-align: center;
+    font-size: 12px;
+    opacity: 0.6;
+}
+
+.achievement.unlocked {
+    opacity: 1;
+}
+
+.achievement.locked img {
+    filter: grayscale(100%);
+    opacity: 0.5;
+}
+
+.achievement img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+}

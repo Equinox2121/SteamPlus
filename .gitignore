@@ -1,3 +1,11 @@
 .env
 cmds.txt
 backend/config/DigiCertGlobalRootG2.crt.pem
+node_modules/
+backend/node_modules/
+frontend/node_modules/
+dist/
+.vite/
+.vscode/
+.idea/
+SteamPlus.session.sql
