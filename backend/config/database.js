@@ -3,11 +3,28 @@ const mysql = require('mysql2/promise');
 const fs = require('fs');
 const path = require('path');
 
-const caPath = path.join(__dirname, 'DigiCertGlobalRootG2.crt.pem');
+let sslConfig;
 
-const caCert = fs.readFileSync(caPath);
+// Azure -> production
+if (process.env.NODE_ENV === 'production') {
+  sslConfig = {
+    rejectUnauthorized: true
+  };
+} 
 
-console.log('CA cert:', caPath);
+// Local -> development
+else {
+  const caPath = path.join(__dirname, 'DigiCertGlobalRootG2.crt.pem');
+  const caCert = fs.readFileSync(caPath);
+
+  console.log('CA cert:', caPath);
+
+  sslConfig = {
+    ca: caCert,
+    rejectUnauthorized: true
+  };
+}
+
 console.log('connect to', `${process.env.DB_HOST}:${process.env.DB_PORT}`);
 
 const pool = mysql.createPool({
@@ -19,10 +36,7 @@ const pool = mysql.createPool({
   waitForConnections: true,
   connectionLimit: 10,
   queueLimit: 0,
-  ssl: {
-    ca: caCert, // use the CA for TLS validation
-    rejectUnauthorized: true
-  }
+  ssl: sslConfig
 });
 
 pool.getConnection()
