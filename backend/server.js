@@ -79,7 +79,7 @@ app.use("/", routes);
 app.use("/auth", authRoutes);
 
 //look for port requests
-const PORT = process.env.BACKEND_PORT || 5000;
+const PORT = process.env.BACKEND_PORT || Number(process.env.PORT) || 5175;
 app.listen(PORT, () => {
     console.log(`running on port ${PORT}`);
 });
