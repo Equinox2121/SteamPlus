@@ -723,6 +723,11 @@ router.get("/steam/game-stats/:appid", authMiddleware, async (req, res) => {
             totalCount = uAchs.length;
         }
 
+        // Debug logs
+        // console.log("User Achievements:", userAchRes.value);
+        // console.log("Schema:", schemaRes.value);
+        // console.log("Global:", globalAchRes.value);
+
         // Custom Stats
         let customStats = [];
         if (userStatsRes.status === 'fulfilled' && userStatsRes.value.playerstats?.stats) {
