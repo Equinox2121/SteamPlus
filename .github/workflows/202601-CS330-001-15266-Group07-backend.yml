@@ -43,7 +43,7 @@ jobs:
       - name: Deploy to Azure Web App
         uses: azure/webapps-deploy@v3
         with:
-          app-name: "<your-appservice-name>"
+          app-name: "202601-CS330-001-15266-Group07-backend"
           slot-name: "Production"
           package: backend
           publish-profile: ${{ secrets.APP_SERVICE_PUBLISH_PROFILE }}
