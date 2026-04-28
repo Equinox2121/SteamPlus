@@ -8,6 +8,7 @@ let sslConfig;
 // Azure -> production
 if (process.env.NODE_ENV === 'production') {
   sslConfig = {
+    ca: process.env.DB_CA_CERT,
     rejectUnauthorized: true
   };
 } 
