@@ -48,7 +48,7 @@ router.get("/user", async (req, res) => {
                 if (token) {
                     res.clearCookie('token', {
                         httpOnly: true,
-                        sameSite: 'strict',
+                        sameSite: 'none',
                         secure: process.env.NODE_ENV === 'production'
                     });
                 }
@@ -107,7 +107,7 @@ router.get("/auth/steam/return",
                 const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
                 res.cookie('token', token, {
                     httpOnly: true,
-                    sameSite: 'strict',
+                    sameSite: 'none',
                     secure: process.env.NODE_ENV === 'production',
                     maxAge: 60 * 60 * 1000
                 });
@@ -128,7 +128,7 @@ router.post('/logout', (req, res) => {
 
     res.clearCookie('token', {
         httpOnly: true,
-        sameSite: 'strict',
+        sameSite: 'none',
         secure: process.env.NODE_ENV === 'production'
     });
 
