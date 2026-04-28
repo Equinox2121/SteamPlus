@@ -14,6 +14,10 @@ const authRoutes = require("./routes/auth");
 
 const app = express();
 
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 console.log("current environment: ", {
     BACKEND_URL: process.env.BACKEND_URL,
     FRONTEND_URL: process.env.FRONTEND_URL,
@@ -67,8 +71,8 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: false,
-        sameSite: "lax"
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: "none"
     }
 }));
 
