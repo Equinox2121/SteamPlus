@@ -1,9 +1,6 @@
 .env
-.gitignore
 cmds.txt
 backend/config/DigiCertGlobalRootG2.crt.pem
-backend/scripts
-backend/tests
 node_modules/
 backend/node_modules/
 frontend/node_modules/
