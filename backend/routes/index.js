@@ -195,8 +195,13 @@ router.get("/steam/library", (req, res) => {
         apiRes.on("end", () => {
             try {
                 if (statusCode !== 200) {
-                    console.error(`Steam API returned status code ${statusCode}`);
-                    console.error(`Response data: ${data.substring(0, 500)}`);
+                    // Log as an object to prevent log injection
+                    console.error({ 
+                        message: "Steam API error status", 
+                        statusCode, 
+                        partialData: data.substring(0, 500) 
+                    });
+                    
                     return res.status(statusCode === 403 ? 403 : 502).json({ 
                         error: "Steam API error", 
                         message: `Steam returned status ${statusCode}` 
@@ -204,8 +209,11 @@ router.get("/steam/library", (req, res) => {
                 }
 
                 if (!contentType || !contentType.includes("application/json")) {
-                    console.error(`Unexpected content-type: ${contentType}`);
-                    console.error(`Response data: ${data.substring(0, 500)}`);
+                    console.error({ 
+                        message: "Unexpected content-type from Steam", 
+                        contentType, 
+                        partialData: data.substring(0, 500) 
+                    });
                     return res.status(502).json({ error: "Steam API returned non-JSON response" });
                 }
 
