@@ -1,4 +1,4 @@
-const BACKEND_URL = ""; // NEEDS TO BE ADDED
+const BACKEND_URL = "http://localhost:5000";
  
 const fetchSteamId = async () => {
   try {
@@ -11,7 +11,7 @@ const fetchSteamId = async () => {
   }
 };
 
-const API_KEY = ""; // NEEDS TO BE ADDED
+const API_KEY = "CAA4749CAF9399C2F00E5B805F46349B";
 
 const fetchSocialStats = async (steamId) => {
   try {
