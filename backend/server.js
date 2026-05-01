@@ -13,6 +13,7 @@ const routes = require("./routes/index");
 const authRoutes = require("./routes/auth");
 
 const app = express();
+app.disable("x-powered-by");
 
 if (process.env.NODE_ENV === 'production') {
   app.set('trust proxy', 1);
