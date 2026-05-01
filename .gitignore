@@ -12,3 +12,4 @@ dist/
 .vscode/
 .idea/
 SteamPlus.session.sql
+frontend/eslint.config.js

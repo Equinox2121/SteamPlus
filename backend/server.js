@@ -14,6 +14,10 @@ const authRoutes = require("./routes/auth");
 
 const app = express();
 
+if (process.env.NODE_ENV === 'production') {
+  app.set('trust proxy', 1);
+}
+
 console.log("current environment: ", {
     BACKEND_URL: process.env.BACKEND_URL,
     FRONTEND_URL: process.env.FRONTEND_URL,
@@ -67,8 +71,8 @@ app.use(session({
     resave: false,
     saveUninitialized: true,
     cookie: {
-        secure: false,
-        sameSite: "lax"
+        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
+        secure: process.env.NODE_ENV === 'production',
     }
 }));
 
@@ -79,7 +83,7 @@ app.use("/", routes);
 app.use("/auth", authRoutes);
 
 //look for port requests
-const PORT = process.env.BACKEND_PORT || 5000;
+const PORT = process.env.BACKEND_PORT || Number(process.env.PORT) || 5175;
 app.listen(PORT, () => {
     console.log(`running on port ${PORT}`);
 });
