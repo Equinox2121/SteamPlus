@@ -63,7 +63,13 @@ const Navbar = () => {
                         </a>
                         <a href="#" className="navbar-link">Community</a>
                         <a href="#" className="navbar-link">About</a>
-                        <a href="#" className="navbar-link">Support</a>
+                        <a
+                            href="#"
+                            className={`navbar-link ${location.pathname === '/support' ? 'active' : ''}`}
+                            onClick={(e) => { e.preventDefault(); navigate('/support'); }}
+                        >
+                            Support
+                        </a>
                     </div>
                 </div>
 
