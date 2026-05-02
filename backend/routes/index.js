@@ -83,26 +83,7 @@ router.get("/auth/steam", (req, res, next) => {
 });
 
 router.get("/auth/steam/return",
-    (req, res, next) => {
-        console.log("STEAM RETURN hit. query keys:", Object.keys(req.query || {}).slice(0, 10), "session id:", req.sessionID);
-        passport.authenticate("steam", (err, user, info) => {
-            if (err) {
-                console.error("Steam auth ERROR:", err && err.message ? err.message : err);
-                return res.redirect(`${FRONTEND_URL}/home`);
-            }
-            if (!user) {
-                console.error("Steam auth FAILED (no user). info:", info);
-                return res.redirect(`${FRONTEND_URL}/home`);
-            }
-            req.login(user, (loginErr) => {
-                if (loginErr) {
-                    console.error("Steam req.login ERROR:", loginErr.message || loginErr);
-                    return res.redirect(`${FRONTEND_URL}/home`);
-                }
-                next();
-            });
-        })(req, res, next);
-    },
+    passport.authenticate("steam", { failureRedirect: "/" }),
     async (req, res) => {
         const profile = req.user;
         let steamId = profile.id;
