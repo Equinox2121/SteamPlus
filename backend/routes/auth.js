@@ -2,6 +2,7 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database.js');
+const { getTokenFromRequest, verifyToken } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -62,7 +63,7 @@ router.post('/login', async (req, res) => {
         maxAge: 60 * 60 * 1000
       });
 
-      return res.json({ message: 'Login successful' });
+      return res.json({ message: 'Login successful', token });
     }
 
     res.status(401).json({ error: 'Invalid credentials' });
@@ -73,26 +74,20 @@ router.post('/login', async (req, res) => {
 });
 
 router.get('/test', async (req, res) => {
-  try {
-    const token = req.cookies?.token;
-    if (!token) {
-      return res.status(403).json({ error: 'Access denied' });
-    }
+  const token = getTokenFromRequest(req);
+  if (!token) return res.status(403).json({ error: 'Access denied' });
+  const decoded = verifyToken(token);
+  if (!decoded) return res.status(401).json({ error: 'Invalid token' });
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-    return res.json({ 
-        ok: true, 
-        user: { 
-            id: decoded.id, 
-            username: decoded.username,
-            steamid: decoded.steamid,
-            avatar: decoded.avatar
-        } 
-    });
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid token' });
-  }
+  return res.json({
+      ok: true,
+      user: {
+          id: decoded.id,
+          username: decoded.username,
+          steamid: decoded.steamid,
+          avatar: decoded.avatar
+      }
+  });
 });
 
 router.post('/logout', (req, res) => {
@@ -105,20 +100,19 @@ router.post('/logout', (req, res) => {
 });
 
 router.post('/complete-steam-profile', async (req, res) => {
-  if (!req.isAuthenticated() || !req.user) {
+  const pendingToken = getTokenFromRequest(req);
+  const pending = pendingToken ? verifyToken(pendingToken) : null;
+  if (!pending || !pending.pending || !pending.steamid) {
     return res.status(401).json({ error: 'Not authenticated with Steam' });
   }
+
   const { username } = req.body;
   if (!username) return res.status(400).json({ error: 'Username is required' });
 
-  let steamId = req.user.id;
-  if (steamId && typeof steamId === 'string' && steamId.includes('https://steamcommunity.com/openid/id/')) {
-    steamId = steamId.split('https://steamcommunity.com/openid/id/')[1];
-  }
-  const email = (req.user.emails && req.user.emails[0] && req.user.emails[0].value) || null;
+  const steamId = pending.steamid;
+  const avatar = pending.avatar || null;
 
   try {
-
     const [existing] = await pool.execute('SELECT * FROM users WHERE username = ?', [username]);
     if (existing.length > 0) {
       return res.status(400).json({ error: 'Username already taken' });
@@ -126,25 +120,11 @@ router.post('/complete-steam-profile', async (req, res) => {
 
     const [result] = await pool.execute(
       'INSERT INTO users (username, email, steam_id) VALUES (?, ?, ?)',
-      [username, email, steamId]
+      [username, null, steamId]
     );
 
-    const newUser = {
-      id: result.insertId,
-      username: username,
-      steamid: steamId
-    };
-
-    const avatar = (req.user.photos && req.user.photos[2] && req.user.photos[2].value) ||
-      (req.user._json && (req.user._json.avatarfull || req.user._json.avatarmedium || req.user._json.avatar)) ||
-      null;
-
-    const payload = {
-      id: newUser.id,
-      username: newUser.username,
-      steamid: newUser.steamid,
-      avatar: avatar
-    };
+    const newUser = { id: result.insertId, username, steamid: steamId };
+    const payload = { id: newUser.id, username: newUser.username, steamid: newUser.steamid, avatar };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
     res.cookie('token', token, {
       httpOnly: true,
@@ -153,7 +133,7 @@ router.post('/complete-steam-profile', async (req, res) => {
       maxAge: 60 * 60 * 1000
     });
 
-    res.json({ message: 'Profile completed successfully', user: newUser });
+    res.json({ message: 'Profile completed successfully', user: newUser, token });
   } catch (error) {
     console.error('Error during profile completion:', error);
     res.status(500).json({ error: 'Failed to complete profile' });

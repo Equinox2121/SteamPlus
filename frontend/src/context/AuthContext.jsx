@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
+const TOKEN_KEY = 'sp_jwt';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
@@ -34,6 +35,7 @@ export const AuthProvider = ({ children }) => {
             });
             const data = await res.json();
             if (res.ok) {
+                if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
                 fetchUser();
                 return { success: true };
             }
@@ -69,6 +71,7 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 credentials: 'include'
             });
+            localStorage.removeItem(TOKEN_KEY);
             setUser(null);
             if (callback) callback();
         } catch (e) {
@@ -86,6 +89,7 @@ export const AuthProvider = ({ children }) => {
             });
             const data = await res.json();
             if (res.ok) {
+                if (data.token) localStorage.setItem(TOKEN_KEY, data.token);
                 fetchUser();
                 return { success: true };
             }
