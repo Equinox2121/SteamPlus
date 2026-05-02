@@ -3,6 +3,39 @@ import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
+const TOKEN_KEY = 'sp_jwt';
+
+if (typeof window !== 'undefined' && window.location.hash) {
+  const params = new URLSearchParams(window.location.hash.slice(1));
+  const captured = params.get('token') || params.get('pending');
+  if (captured) {
+    localStorage.setItem(TOKEN_KEY, captured);
+    history.replaceState(null, '', window.location.pathname + window.location.search);
+  }
+}
+
+const originalFetch = window.fetch.bind(window);
+window.fetch = (input, init = {}) => {
+  const url = typeof input === 'string' ? input : (input && input.url) || '';
+  if (BACKEND_URL && url.startsWith(BACKEND_URL)) {
+    const token = localStorage.getItem(TOKEN_KEY);
+    if (token) {
+      const next = { ...init };
+      const existing = next.headers || {};
+      const headers = existing instanceof Headers
+        ? Object.fromEntries(existing.entries())
+        : { ...existing };
+      if (!headers.Authorization && !headers.authorization) {
+        headers.Authorization = `Bearer ${token}`;
+      }
+      next.headers = headers;
+      return originalFetch(input, next);
+    }
+  }
+  return originalFetch(input, init);
+};
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <App />

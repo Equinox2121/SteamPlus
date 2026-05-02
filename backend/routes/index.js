@@ -5,6 +5,7 @@ const jwt = require("jsonwebtoken");
 const pool = require("../config/database.js");
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware'); // ***USE THIS FOR ANY ROUTES THAT REQUIRE AUTH
+const { getTokenFromRequest, verifyToken } = require('../middleware/authMiddleware');
 const {
     buildUserTasteProfile,
     computeCandidateStats,
@@ -19,15 +20,8 @@ const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // user status route
 router.get("/user", async (req, res) => {
-    const token = req.cookies?.token;
-    let user = null;
-
-    if (token) {
-        try {
-            user = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (error) {
-        }
-    }
+    const token = getTokenFromRequest(req);
+    let user = token ? verifyToken(token) : null;
 
     if (!user && req.user) {
         user = req.user;
@@ -97,32 +91,31 @@ router.get("/auth/steam/return",
             steamId = steamId.split('https://steamcommunity.com/openid/id/')[1];
         }
 
+        const avatar = (profile.photos && profile.photos[2] && profile.photos[2].value) ||
+            (profile._json && (profile._json.avatarfull || profile._json.avatarmedium || profile._json.avatar)) ||
+            null;
+
         try {
             const [rows] = await pool.execute('SELECT * FROM users WHERE steam_id = ?', [steamId]);
             const user = rows[0];
 
             if (user) {
-                // user already exists
-                const avatar = (profile.photos && profile.photos[2] && profile.photos[2].value) ||
-                    (profile._json && (profile._json.avatarfull || profile._json.avatarmedium || profile._json.avatar)) ||
-                    null;
-                const payload = {
-                    id: user.id,
-                    username: user.username,
-                    steamid: user.steam_id,
-                    avatar: avatar
-                };
+                const payload = { id: user.id, username: user.username, steamid: user.steam_id, avatar };
                 const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
                 res.cookie('token', token, {
                     httpOnly: true,
-                        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                        secure: process.env.NODE_ENV === 'production',
+                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
+                    secure: process.env.NODE_ENV === 'production',
                     maxAge: 60 * 60 * 1000
                 });
-                res.redirect(`${FRONTEND_URL}/home`);
+                res.redirect(`${FRONTEND_URL}/home#token=${encodeURIComponent(token)}`);
             } else {
-                // new user, redirect to username choice
-                res.redirect(`${FRONTEND_URL}/complete-profile`);
+                const pending = jwt.sign(
+                    { pending: true, steamid: steamId, avatar },
+                    process.env.JWT_SECRET,
+                    { expiresIn: '10m' }
+                );
+                res.redirect(`${FRONTEND_URL}/complete-profile#pending=${encodeURIComponent(pending)}`);
             }
         } catch (error) {
             console.error('Error during Steam return:', error);
@@ -131,7 +124,6 @@ router.get("/auth/steam/return",
     }
 );
 
-// support report -> Discord webhook (URL kept server-side)
 router.post('/support', async (req, res) => {
     const { header, email, body } = req.body || {};
 
@@ -206,16 +198,8 @@ router.post('/logout', (req, res) => {
 
 // steam library route
 router.get("/steam/library", (req, res) => {
-    const token = req.cookies?.token;
-    let user = null;
-
-    if (token) {
-        try {
-            user = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (error) {
-            console.error("JWT verify error in library route:", error);
-        }
-    }
+    const token = getTokenFromRequest(req);
+    let user = token ? verifyToken(token) : null;
 
     if (!user && req.user) {
         user = req.user;
@@ -364,17 +348,8 @@ function getSteamPersonaState(state) {
 
 
 router.get("/steam/friends-activity", async (req, res) => {
-    const token = req.cookies?.token;
-    let user = null;
-
-
-    if (token) {
-        try {
-            user = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (error) {
-            console.error("JWT verify error in friends activity route:", error);
-        }
-    }
+    const token = getTokenFromRequest(req);
+    let user = token ? verifyToken(token) : null;
 
 
     if (!user && req.user) {
@@ -668,16 +643,8 @@ router.get("/steam/recommendations/owned", async (req, res) => {
         ? Math.min(Math.floor(requestedLimit), 24)
         : 12;
 
-    const token = req.cookies?.token;
-    let user = null;
-
-    if (token) {
-        try {
-            user = jwt.verify(token, process.env.JWT_SECRET);
-        } catch (error) {
-            console.error("JWT verify error in owned recommendations route:", error.message);
-        }
-    }
+    const token = getTokenFromRequest(req);
+    let user = token ? verifyToken(token) : null;
 
     if (!user && req.user) {
         user = req.user;
