@@ -6,6 +6,7 @@ import Friends from './pages/Friends';
 import Profile from './pages/Profile';
 import CompleteProfile from './pages/CompleteProfile';
 import Game from './pages/Game';
+import Support from './pages/Support';
 import Navbar from './pages/Navbar';
 import { AuthProvider } from './context/AuthContext';
 
@@ -24,6 +25,7 @@ function AppContent() {
                 <Route path="/profile" element={<Profile />} />
                 <Route path="/complete-profile" element={<CompleteProfile />} />
                 <Route path="/game/:appid" element={<Game />} />
+                <Route path="/support" element={<Support />} />
             </Routes>
         </div>
     );
