@@ -131,6 +131,58 @@ router.get("/auth/steam/return",
     }
 );
 
+// support report -> Discord webhook (URL kept server-side)
+router.post('/support', async (req, res) => {
+    const { header, email, body } = req.body || {};
+
+    if (typeof header !== 'string' || typeof email !== 'string' || typeof body !== 'string') {
+        return res.status(400).json({ error: 'header, email, and body are required' });
+    }
+    if (!header.trim() || !email.trim() || !body.trim()) {
+        return res.status(400).json({ error: 'header, email, and body cannot be empty' });
+    }
+    if (header.length > 256 || email.length > 256 || body.length > 4000) {
+        return res.status(400).json({ error: 'one or more fields exceed length limits' });
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: 'invalid email' });
+    }
+
+    const webhookUrl = process.env.SUPPORT_WEBHOOK_URL;
+    if (!webhookUrl) {
+        console.error('SUPPORT_WEBHOOK_URL is not configured');
+        return res.status(500).json({ error: 'support service not configured' });
+    }
+
+    const payload = {
+        username: 'SteamPlus Support',
+        embeds: [{
+            title: header,
+            description: body,
+            color: 0x66c0f4,
+            fields: [{ name: 'Reply to', value: email, inline: false }],
+            timestamp: new Date().toISOString()
+        }]
+    };
+
+    try {
+        const r = await fetch(webhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        if (!r.ok) {
+            const text = await r.text();
+            console.error(`Discord webhook returned ${r.status}: ${text}`);
+            return res.status(502).json({ error: 'failed to deliver report' });
+        }
+        return res.json({ ok: true });
+    } catch (err) {
+        console.error('Support submission failed:', err);
+        return res.status(502).json({ error: 'failed to deliver report' });
+    }
+});
+
 // logout route
 router.post('/logout', (req, res) => {
 

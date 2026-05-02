@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import logo from '../assets/SteamPlus Logo.png';
 import './LoginModal.css';
 
-const SUPPORT_WEBHOOK_URL = 'https://discord.com/api/webhooks/1500251016199667894/XNVIjtKVmkJapH5Q6BfMMIKcdNvPR74z6Bln58f9AEAUYd49p6LVr4ndh2bjJQNQKtA1';
-
 const Support = () => {
     const [header, setHeader] = useState('');
     const [email, setEmail] = useState('');
@@ -16,26 +14,15 @@ const Support = () => {
         setError(null);
         setStatus('sending');
 
-        const payload = {
-            username: 'SteamPlus Support',
-            embeds: [{
-                title: header.slice(0, 256),
-                description: body.slice(0, 4000),
-                color: 0x66c0f4,
-                fields: [{ name: 'Reply to', value: email, inline: false }],
-                timestamp: new Date().toISOString()
-            }]
-        };
-
         try {
-            const res = await fetch(SUPPORT_WEBHOOK_URL, {
+            const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/support`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload)
+                body: JSON.stringify({ header, email, body })
             });
+            const data = await res.json().catch(() => ({}));
             if (!res.ok) {
-                const text = await res.text();
-                throw new Error(`Discord returned ${res.status}: ${text}`);
+                throw new Error(data.error || `request failed (${res.status})`);
             }
             setStatus('sent');
             setHeader('');
