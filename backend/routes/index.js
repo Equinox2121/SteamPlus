@@ -6,6 +6,7 @@ const pool = require("../config/database.js");
 const router = express.Router();
 const authMiddleware = require('../middleware/authMiddleware'); // ***USE THIS FOR ANY ROUTES THAT REQUIRE AUTH
 const { getTokenFromRequest, verifyToken } = require('../middleware/authMiddleware');
+const { pickFrontend, isAllowedOrigin, normalizeOrigin, authCookieOptions } = require('../config/origins');
 const {
     buildUserTasteProfile,
     computeCandidateStats,
@@ -16,7 +17,6 @@ const {
 } = require("../services/recommendationEngine");
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // user status route
 router.get("/user", async (req, res) => {
@@ -48,11 +48,7 @@ router.get("/user", async (req, res) => {
             if (rows.length === 0) {
                 // user no longer exists in db
                 if (token) {
-                    res.clearCookie('token', {
-                        httpOnly: true,
-                        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                        secure: process.env.NODE_ENV === 'production',
-                    });
+                    res.clearCookie('token', authCookieOptions());
                 }
                 return res.json({ loggedIn: false });
             }
@@ -79,6 +75,11 @@ router.get("/user", async (req, res) => {
 // steam auth routes
 router.get("/auth/steam", (req, res, next) => {
     console.log("AUTHENTICATING STEAM");
+    const candidate = req.query.return_to || req.get("referer");
+    const normalized = normalizeOrigin(candidate);
+    if (normalized && isAllowedOrigin(normalized)) {
+        req.session.return_to = normalized;
+    }
     passport.authenticate("steam", { failureRedirect: "/" })(req, res, next);
 });
 
@@ -99,27 +100,25 @@ router.get("/auth/steam/return",
             const [rows] = await pool.execute('SELECT * FROM users WHERE steam_id = ?', [steamId]);
             const user = rows[0];
 
+            const target = pickFrontend(req);
+            if (req.session) delete req.session.return_to;
+
             if (user) {
                 const payload = { id: user.id, username: user.username, steamid: user.steam_id, avatar };
                 const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-                res.cookie('token', token, {
-                    httpOnly: true,
-                    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-                    secure: process.env.NODE_ENV === 'production',
-                    maxAge: 60 * 60 * 1000
-                });
-                res.redirect(`${FRONTEND_URL}/home#token=${encodeURIComponent(token)}`);
+                res.cookie('token', token, authCookieOptions({ maxAge: 60 * 60 * 1000 }));
+                res.redirect(`${target}/home#token=${encodeURIComponent(token)}`);
             } else {
                 const pending = jwt.sign(
                     { pending: true, steamid: steamId, avatar },
                     process.env.JWT_SECRET,
                     { expiresIn: '10m' }
                 );
-                res.redirect(`${FRONTEND_URL}/complete-profile#pending=${encodeURIComponent(pending)}`);
+                res.redirect(`${target}/complete-profile#pending=${encodeURIComponent(pending)}`);
             }
         } catch (error) {
             console.error('Error during Steam return:', error);
-            res.redirect(`${FRONTEND_URL}/home`);
+            res.redirect(`${pickFrontend(req)}/home`);
         }
     }
 );
@@ -178,11 +177,7 @@ router.post('/support', async (req, res) => {
 // logout route
 router.post('/logout', (req, res) => {
 
-    res.clearCookie('token', {
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-        secure: process.env.NODE_ENV === 'production',
-    });
+    res.clearCookie('token', authCookieOptions());
 
     req.logout(function(err) {
         if (err) {
@@ -1142,7 +1137,7 @@ router.get("/steam/game-stats/:appid", authMiddleware, async (req, res) => {
 });
 
 router.get("/", (req, res) => {
-    res.redirect(`${FRONTEND_URL}/home`);
+    res.redirect(`${pickFrontend(req)}/home`);
 });
 
 module.exports = router;

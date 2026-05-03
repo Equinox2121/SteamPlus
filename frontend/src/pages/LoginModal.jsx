@@ -129,7 +129,7 @@ const LoginModal = ({ isOpen, onClose }) => {
                         <p style={{ color: '#c6d4df', fontSize: '13px', marginBottom: '10px', textTransform: 'uppercase', letterSpacing: '1px', textAlign: 'center' }}>
                             Use your Steam account to log in
                         </p>
-                        <a href={`${import.meta.env.VITE_BACKEND_URL}/auth/steam`} className="steam-btn" style={{ display: 'block', textDecoration: 'none', textAlign: 'center' }}>
+                        <a href={`${import.meta.env.VITE_BACKEND_URL}/auth/steam?return_to=${encodeURIComponent(window.location.origin)}`} className="steam-btn" style={{ display: 'block', textDecoration: 'none', textAlign: 'center' }}>
                             Sign in with Steam
                         </a>
                         

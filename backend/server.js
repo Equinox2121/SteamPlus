@@ -9,6 +9,7 @@ const passport = require("passport");
 const SteamStrategy = require("passport-steam").Strategy;
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
+const { ALLOWED_FRONTENDS, isAllowedOrigin } = require("./config/origins");
 const routes = require("./routes/index");
 const authRoutes = require("./routes/auth");
 
@@ -26,7 +27,6 @@ console.log("current environment: ", {
 });
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000";
-const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 console.log("steam strategy:", {
     returnURL: `${BACKEND_URL}/auth/steam/return`,
@@ -57,7 +57,11 @@ if (strategy) {
 }
 
 app.use(cors({
-    origin: FRONTEND_URL,
+    origin: (origin, cb) => {
+        if (!origin) return cb(null, true);
+        if (isAllowedOrigin(origin)) return cb(null, true);
+        return cb(new Error(`Origin ${origin} not allowed by CORS`));
+    },
     credentials: true
 }));
 
@@ -74,6 +78,9 @@ app.use(session({
     cookie: {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production',
+        ...(process.env.COOKIE_DOMAIN || process.env.NODE_ENV === 'production'
+            ? { domain: process.env.COOKIE_DOMAIN || '.steamplus.xyz' }
+            : {}),
     }
 }));
 

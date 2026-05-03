@@ -3,6 +3,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const pool = require('../config/database.js');
 const { getTokenFromRequest, verifyToken } = require('../middleware/authMiddleware');
+const { authCookieOptions } = require('../config/origins');
 
 const router = express.Router();
 
@@ -56,12 +57,7 @@ router.post('/login', async (req, res) => {
 
       const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
 
-      res.cookie('token', token, {
-        httpOnly: true,
-        sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-        secure: process.env.NODE_ENV === 'production',
-        maxAge: 60 * 60 * 1000
-      });
+      res.cookie('token', token, authCookieOptions({ maxAge: 60 * 60 * 1000 }));
 
       return res.json({ message: 'Login successful', token });
     }
@@ -91,11 +87,7 @@ router.get('/test', async (req, res) => {
 });
 
 router.post('/logout', (req, res) => {
-  res.clearCookie('token', {
-    httpOnly: true,
-    sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-    secure: process.env.NODE_ENV === 'production',
-  });
+  res.clearCookie('token', authCookieOptions());
   res.json({ message: 'Logged out' });
 });
 
@@ -126,12 +118,7 @@ router.post('/complete-steam-profile', async (req, res) => {
     const newUser = { id: result.insertId, username, steamid: steamId };
     const payload = { id: newUser.id, username: newUser.username, steamid: newUser.steamid, avatar };
     const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.cookie('token', token, {
-      httpOnly: true,
-      sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'strict',
-      secure: process.env.NODE_ENV === 'production',
-      maxAge: 60 * 60 * 1000
-    });
+    res.cookie('token', token, authCookieOptions({ maxAge: 60 * 60 * 1000 }));
 
     res.json({ message: 'Profile completed successfully', user: newUser, token });
   } catch (error) {
