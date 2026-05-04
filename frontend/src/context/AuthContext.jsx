@@ -1,26 +1,56 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const TOKEN_KEY = 'sp_jwt';
+const USER_KEY = 'sp_user';
 const AuthContext = createContext();
 
+const readCachedUser = () => {
+    try {
+        const raw = localStorage.getItem(USER_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+};
+
+const writeCachedUser = (u) => {
+    try {
+        if (u) localStorage.setItem(USER_KEY, JSON.stringify(u));
+        else localStorage.removeItem(USER_KEY);
+    } catch {}
+};
+
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const initialToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+    const initialUser = initialToken ? readCachedUser() : null;
+    const [user, setUser] = useState(initialUser);
     const [loading, setLoading] = useState(true);
+
+    const persistUser = (u) => {
+        setUser(u);
+        writeCachedUser(u);
+    };
 
     const fetchUser = () => {
         setLoading(true);
+        const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
         fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, { credentials: "include" })
             .then(res => res.json())
             .then(data => {
                 if (data.loggedIn) {
-                    setUser({ username: data.username, avatar: data.avatar || null });
+                    persistUser({ username: data.username, avatar: data.avatar || null });
+                    console.info('[auth] verified via /user as', data.username);
                 } else {
-                    setUser(null);
+                    if (token) {
+                        console.warn('[auth] /user returned loggedIn:false despite token in localStorage; clearing');
+                        localStorage.removeItem(TOKEN_KEY);
+                    }
+                    persistUser(null);
                 }
             })
             .catch(err => {
-                console.error('error fetching user:', err);
-                setUser(null);
+                console.error('[auth] /user fetch failed:', err);
+                if (!token) persistUser(null);
             })
             .finally(() => setLoading(false));
     };
@@ -71,11 +101,12 @@ export const AuthProvider = ({ children }) => {
                 method: 'POST',
                 credentials: 'include'
             });
-            localStorage.removeItem(TOKEN_KEY);
-            setUser(null);
-            if (callback) callback();
         } catch (e) {
             console.error('error logging out:', e);
+        } finally {
+            localStorage.removeItem(TOKEN_KEY);
+            persistUser(null);
+            if (callback) callback();
         }
     };
 
