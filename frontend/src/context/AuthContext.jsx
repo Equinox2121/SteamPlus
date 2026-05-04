@@ -24,7 +24,7 @@ export const AuthProvider = ({ children }) => {
     const initialToken = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
     const initialUser = initialToken ? readCachedUser() : null;
     const [user, setUser] = useState(initialUser);
-    const [loading, setLoading] = useState(true);
+    const [loading, setLoading] = useState(!!initialToken && !initialUser);
 
     const persistUser = (u) => {
         setUser(u);
@@ -32,8 +32,13 @@ export const AuthProvider = ({ children }) => {
     };
 
     const fetchUser = () => {
-        setLoading(true);
         const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+        if (!token) {
+            persistUser(null);
+            setLoading(false);
+            return;
+        }
+        setLoading(true);
         fetch(`${import.meta.env.VITE_BACKEND_URL}/user`, { credentials: "include" })
             .then(res => res.json())
             .then(data => {

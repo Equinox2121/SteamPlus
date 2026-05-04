@@ -304,13 +304,7 @@ function Home() {
 
     return (
         <div className="home-container store-home-container">
-            {loading ? (
-                <div className="login-content store-loading-panel">
-                    <p>Loading...</p>
-                </div>
-            ) : (
-                <>
-                    <div className="header-section store-hero-header">
+            <div className="header-section store-hero-header">
                         <div className="store-hero-copy">
                             <div className="store-kicker">Steam Store</div>
                             <h2 className="store-page-title">Discover your next favorite game</h2>
@@ -531,8 +525,6 @@ function Home() {
                             </div>
                         )}
                     </section>
-                </>
-            )}
         </div>
     );
 }
