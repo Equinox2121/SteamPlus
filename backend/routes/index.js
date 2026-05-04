@@ -17,6 +17,9 @@ const {
 } = require("../services/recommendationEngine");
 
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
+const SESSION_TTL_DAYS = 30;
+const SESSION_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
+const SESSION_TTL_JWT = `${SESSION_TTL_DAYS}d`;
 
 // user status route
 router.get("/user", async (req, res) => {
@@ -105,8 +108,8 @@ router.get("/auth/steam/return",
 
             if (user) {
                 const payload = { id: user.id, username: user.username, steamid: user.steam_id, avatar };
-                const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-                res.cookie('token', token, authCookieOptions({ maxAge: 60 * 60 * 1000 }));
+                const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: SESSION_TTL_JWT });
+                res.cookie('token', token, authCookieOptions({ maxAge: SESSION_TTL_MS }));
                 res.redirect(`${target}/home#token=${encodeURIComponent(token)}`);
             } else {
                 const pending = jwt.sign(

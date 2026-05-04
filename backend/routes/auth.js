@@ -5,6 +5,10 @@ const pool = require('../config/database.js');
 const { getTokenFromRequest, verifyToken } = require('../middleware/authMiddleware');
 const { authCookieOptions } = require('../config/origins');
 
+const SESSION_TTL_DAYS = 30;
+const SESSION_TTL_MS = SESSION_TTL_DAYS * 24 * 60 * 60 * 1000;
+const SESSION_TTL_JWT = `${SESSION_TTL_DAYS}d`;
+
 const router = express.Router();
 
 router.post('/register', async (req, res) => {
@@ -55,9 +59,9 @@ router.post('/login', async (req, res) => {
           steamid: user.steam_id 
       };
 
-      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: SESSION_TTL_JWT });
 
-      res.cookie('token', token, authCookieOptions({ maxAge: 60 * 60 * 1000 }));
+      res.cookie('token', token, authCookieOptions({ maxAge: SESSION_TTL_MS }));
 
       return res.json({ message: 'Login successful', token });
     }
@@ -117,8 +121,8 @@ router.post('/complete-steam-profile', async (req, res) => {
 
     const newUser = { id: result.insertId, username, steamid: steamId };
     const payload = { id: newUser.id, username: newUser.username, steamid: newUser.steamid, avatar };
-    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '1h' });
-    res.cookie('token', token, authCookieOptions({ maxAge: 60 * 60 * 1000 }));
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: SESSION_TTL_JWT });
+    res.cookie('token', token, authCookieOptions({ maxAge: SESSION_TTL_MS }));
 
     res.json({ message: 'Profile completed successfully', user: newUser, token });
   } catch (error) {
