@@ -43,7 +43,7 @@ function pickFrontend(req) {
 }
 
 const isProd = process.env.NODE_ENV === "production";
-const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || (isProd ? ".steamplus.xyz" : undefined);
+const COOKIE_DOMAIN = process.env.COOKIE_DOMAIN || undefined;
 
 function authCookieOptions(extra = {}) {
     return {

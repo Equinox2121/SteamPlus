@@ -82,9 +82,7 @@ app.use(session({
     cookie: {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production',
-        ...(process.env.COOKIE_DOMAIN || process.env.NODE_ENV === 'production'
-            ? { domain: process.env.COOKIE_DOMAIN || '.steamplus.xyz' }
-            : {}),
+        ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
     }
 }));
 
