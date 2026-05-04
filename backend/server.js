@@ -16,6 +16,7 @@ const dealsRoutes = require("./routes/deals");
 const searchRoutes = require("./routes/search");
 const reviewsRoutes = require("./routes/reviews");
 const dealsWarmer = require("./services/dealsWarmer");
+const allKeyShop = require("./services/allKeyShop");
 
 const app = express();
 app.disable("x-powered-by");
@@ -101,5 +102,7 @@ app.use("/reviews", reviewsRoutes);
 const PORT = process.env.BACKEND_PORT || Number(process.env.PORT) || 5175;
 app.listen(PORT, () => {
     console.log(`running on port ${PORT}`);
-    dealsWarmer.start().catch((err) => console.error("dealsWarmer.start failed:", err.message));
+    allKeyShop.probeReachability().then(() => {
+        dealsWarmer.start().catch((err) => console.error("dealsWarmer.start failed:", err.message));
+    });
 });

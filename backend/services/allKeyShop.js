@@ -6,8 +6,9 @@ const SLUG_TTL_MS = 7 * 24 * 60 * 60 * 1000;
 const FETCH_TIMEOUT_MS = Number(process.env.AKS_FETCH_TIMEOUT_MS) || 6000;
 const MAX_CONCURRENT_FETCHES = Number(process.env.AKS_MAX_CONCURRENT) || 2;
 const RETRY_DELAYS_MS = [];
-const CIRCUIT_TRIP_FAILURES = 5;
+const CIRCUIT_TRIP_FAILURES = Number(process.env.AKS_CIRCUIT_TRIP) || 2;
 const CIRCUIT_OPEN_MS = 60 * 60 * 1000;
+const PROVIDER_DISABLED = process.env.DEALS_PROVIDER === "disabled";
 
 const dealsCache = new Map();
 const slugCache = new Map();
@@ -354,8 +355,12 @@ const getDealsFor = async (steamAppId, title) => {
     const id = Number(steamAppId);
     if (!Number.isFinite(id)) return { available: false, reason: "invalid_appid" };
 
+    if (PROVIDER_DISABLED) return { available: false, reason: "provider_disabled" };
+
     const cached = dealsCache.get(id);
     if (isFresh(cached)) return cached.value;
+
+    if (Date.now() < circuitOpenUntil) return { available: false, reason: "provider_unreachable" };
 
     if (inflight.has(id)) return inflight.get(id);
 
@@ -394,10 +399,41 @@ const stats = () => ({
     circuitOpenUntil: circuitOpenUntil > 0 ? new Date(circuitOpenUntil).toISOString() : null,
 });
 
+const probeReachability = async () => {
+    if (PROVIDER_DISABLED) {
+        console.log("[allKeyShop] provider disabled via DEALS_PROVIDER=disabled");
+        circuitOpenUntil = Date.now() + CIRCUIT_OPEN_MS;
+        return;
+    }
+    const probeUrl = `${BASE}/buy-elden-ring-cd-key-compare-prices/`;
+    const ctrl = new AbortController();
+    const timer = setTimeout(() => ctrl.abort(), 4000);
+    try {
+        const res = await fetch(probeUrl, {
+            method: "HEAD",
+            headers: { "User-Agent": USER_AGENT },
+            signal: ctrl.signal,
+            redirect: "follow",
+        });
+        if (res.ok) {
+            console.log("[allKeyShop] reachability probe OK");
+        } else {
+            console.warn(`[allKeyShop] reachability probe returned ${res.status}; opening circuit`);
+            circuitOpenUntil = Date.now() + CIRCUIT_OPEN_MS;
+        }
+    } catch (err) {
+        console.warn(`[allKeyShop] reachability probe failed (${err.message}); opening circuit for ${CIRCUIT_OPEN_MS / 60000}min`);
+        circuitOpenUntil = Date.now() + CIRCUIT_OPEN_MS;
+    } finally {
+        clearTimeout(timer);
+    }
+};
+
 module.exports = {
     getDealsFor,
     getDealsBatch,
     peekDealsFor,
     stats,
+    probeReachability,
     _internal: { slugify, slugVariants, parseGamePageTrans, parseProductId, normalize },
 };
