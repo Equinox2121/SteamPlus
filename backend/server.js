@@ -9,7 +9,7 @@ const passport = require("passport");
 const SteamStrategy = require("passport-steam").Strategy;
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
-const { ALLOWED_FRONTENDS, isAllowedOrigin } = require("./config/origins");
+const { ALLOWED_FRONTENDS, isAllowedOrigin, COOKIE_DOMAIN } = require("./config/origins");
 const routes = require("./routes/index");
 const authRoutes = require("./routes/auth");
 const dealsRoutes = require("./routes/deals");
@@ -27,7 +27,9 @@ if (process.env.NODE_ENV === 'production') {
 console.log("current environment: ", {
     BACKEND_URL: process.env.BACKEND_URL,
     FRONTEND_URL: process.env.FRONTEND_URL,
-    PORT: process.env.BACKEND_PORT
+    PORT: process.env.BACKEND_PORT,
+    COOKIE_DOMAIN: COOKIE_DOMAIN || "(none)",
+    ALLOWED_FRONTENDS: ALLOWED_FRONTENDS.join(","),
 });
 const STEAM_API_KEY = process.env.STEAM_API_KEY;
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:5000";
@@ -82,7 +84,7 @@ app.use(session({
     cookie: {
         sameSite: process.env.NODE_ENV === 'production' ? 'none' : 'lax',
         secure: process.env.NODE_ENV === 'production',
-        ...(process.env.COOKIE_DOMAIN ? { domain: process.env.COOKIE_DOMAIN } : {}),
+        ...(COOKIE_DOMAIN ? { domain: COOKIE_DOMAIN } : {}),
     }
 }));
 
