@@ -42,6 +42,10 @@ const refresh = async () => {
 };
 
 const start = async () => {
+    if (process.env.DEALS_WARMER_ENABLED !== "true") {
+        console.log("[dealsWarmer] disabled (set DEALS_WARMER_ENABLED=true to enable)");
+        return;
+    }
     setTimeout(async () => {
         try {
             const top = await fetchTopGames(WARM_LIMIT);

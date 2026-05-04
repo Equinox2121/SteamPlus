@@ -3,9 +3,11 @@ const USER_AGENT = "SteamPlusBot/1.0 (+https://www.steamplus.xyz; school project
 const PAGE_TTL_MS = 6 * 60 * 60 * 1000;
 const NEGATIVE_TTL_MS = 60 * 60 * 1000;
 const SLUG_TTL_MS = 7 * 24 * 60 * 60 * 1000;
-const FETCH_TIMEOUT_MS = 15000;
-const MAX_CONCURRENT_FETCHES = 3;
-const RETRY_DELAYS_MS = [800, 2400];
+const FETCH_TIMEOUT_MS = Number(process.env.AKS_FETCH_TIMEOUT_MS) || 6000;
+const MAX_CONCURRENT_FETCHES = Number(process.env.AKS_MAX_CONCURRENT) || 2;
+const RETRY_DELAYS_MS = [];
+const CIRCUIT_TRIP_FAILURES = 5;
+const CIRCUIT_OPEN_MS = 60 * 60 * 1000;
 
 const dealsCache = new Map();
 const slugCache = new Map();
@@ -13,6 +15,8 @@ const inflight = new Map();
 
 let activeFetches = 0;
 const fetchQueue = [];
+let consecutiveFailures = 0;
+let circuitOpenUntil = 0;
 
 const isFresh = (entry) => entry && Date.now() < entry.expiresAt;
 const setCache = (cache, key, value, ttl) => cache.set(key, { value, expiresAt: Date.now() + ttl });
@@ -113,6 +117,9 @@ const fetchOnce = async (url) => {
 };
 
 const fetchPage = async (slug) => {
+    if (Date.now() < circuitOpenUntil) {
+        return { status: 0, html: null, url: `${BASE}/buy-${slug}-cd-key-compare-prices/`, error: "circuit_open" };
+    }
     const url = `${BASE}/buy-${slug}-cd-key-compare-prices/`;
     await acquireSlot();
     try {
@@ -122,6 +129,15 @@ const fetchPage = async (slug) => {
             if (!transient) break;
             await sleep(delay);
             res = await fetchOnce(url);
+        }
+        if (res.status === 200) {
+            consecutiveFailures = 0;
+        } else if (res.status === 0 || res.status === 429 || res.status === 503) {
+            consecutiveFailures++;
+            if (consecutiveFailures >= CIRCUIT_TRIP_FAILURES) {
+                circuitOpenUntil = Date.now() + CIRCUIT_OPEN_MS;
+                console.warn(`[allKeyShop] circuit opened after ${consecutiveFailures} failures; AKS unreachable for ${CIRCUIT_OPEN_MS / 60000}min`);
+            }
         }
         return res;
     } finally {
@@ -373,6 +389,9 @@ const stats = () => ({
     inflightFetches: inflight.size,
     activeFetches,
     queuedFetches: fetchQueue.length,
+    consecutiveFailures,
+    circuitOpen: Date.now() < circuitOpenUntil,
+    circuitOpenUntil: circuitOpenUntil > 0 ? new Date(circuitOpenUntil).toISOString() : null,
 });
 
 module.exports = {
