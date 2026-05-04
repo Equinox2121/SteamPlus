@@ -1,6 +1,7 @@
 ﻿import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { prefetchGame, prefetchSimilar, preloadImage } from '../utils/prefetch';
 import noAvatar from '../assets/NoAvatar.png';
 import './Friends.css';
 
@@ -114,17 +115,21 @@ function Friends() {
                         <p>No recent games available from your friends.</p>
                     ) : (
                         <div className="library-container">
-                            {recentGames.map((game) => (
+                            {recentGames.map((game, idx) => (
                                 <div
                                     key={`${game.appid}-${game.friendName}`}
                                     className="game-card"
                                     onClick={() => navigate(`/game/${game.appid}`)}
+                                    onMouseEnter={() => { prefetchGame(game.appid); prefetchSimilar(game.appid); preloadImage(game.header_image); }}
+                                    onFocus={() => { prefetchGame(game.appid); prefetchSimilar(game.appid); }}
                                 >
                                     <div className="game-image-container">
                                         <img
                                             src={game.header_image}
                                             alt={game.name}
                                             className="game-image"
+                                            loading={idx < 4 ? 'eager' : 'lazy'}
+                                            decoding="async"
                                             onError={(e) => { e.currentTarget.src = 'https://community.cloudflare.steamstatic.com/public/images/applications/community/unknown_game.jpg'; }}
                                         />
                                     </div>

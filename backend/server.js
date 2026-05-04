@@ -12,6 +12,10 @@ const cookieParser = require("cookie-parser");
 const { ALLOWED_FRONTENDS, isAllowedOrigin } = require("./config/origins");
 const routes = require("./routes/index");
 const authRoutes = require("./routes/auth");
+const dealsRoutes = require("./routes/deals");
+const searchRoutes = require("./routes/search");
+const reviewsRoutes = require("./routes/reviews");
+const dealsWarmer = require("./services/dealsWarmer");
 
 const app = express();
 app.disable("x-powered-by");
@@ -89,9 +93,13 @@ app.use(passport.session());
 
 app.use("/", routes);
 app.use("/auth", authRoutes);
+app.use("/deals", dealsRoutes);
+app.use("/", searchRoutes);
+app.use("/reviews", reviewsRoutes);
 
 //look for port requests
 const PORT = process.env.BACKEND_PORT || Number(process.env.PORT) || 5175;
 app.listen(PORT, () => {
     console.log(`running on port ${PORT}`);
+    dealsWarmer.start().catch((err) => console.error("dealsWarmer.start failed:", err.message));
 });

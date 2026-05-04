@@ -1,7 +1,9 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import { useAuth } from '../context/AuthContext';
 import settings from '../settings';
+import { prefetchGame, prefetchSimilar, prefetchDeals, getCachedDeals, preloadImage, fetchReviewSummaries } from '../utils/prefetch';
+import ReviewBadge from '../components/ReviewBadge';
 import './Store.css';
 
 function Home() {
@@ -14,6 +16,10 @@ function Home() {
     const [recsLoading, setRecsLoading] = useState(false);
     const [topGamesLoading, setTopGamesLoading] = useState(false);
     const [recsError, setRecsError] = useState("");
+    const [genreFilter, setGenreFilter] = useState('all');
+    const [searchInput, setSearchInput] = useState('');
+    const [salesData, setSalesData] = useState({});
+    const [reviewSummaries, setReviewSummaries] = useState({});
 
     const getAppId = (game) => Number(game?.appid ?? game?.app_id);
 
@@ -49,6 +55,12 @@ function Home() {
     const jumpToTrending = () => {
         const el = document.getElementById('store-trending-section');
         if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+
+    const submitSearch = (e) => {
+        e.preventDefault();
+        const q = searchInput.trim();
+        if (q.length >= 2) navigate(`/search?q=${encodeURIComponent(q)}`);
     };
 
     useEffect(() => {
@@ -110,25 +122,121 @@ function Home() {
         return () => { isMounted = false; };
     }, [user]);
 
+    useEffect(() => {
+        if (!topGames || topGames.length === 0) return;
+        const visible = topGames.slice(0, 12);
+        const ids = visible.map((g) => Number(g.appid ?? g.app_id)).filter((n) => Number.isFinite(n));
+        const titles = visible.map((g) => g.name || '');
+        if (ids.length === 0) return;
+        let cancelled = false;
+        const url = `${import.meta.env.VITE_BACKEND_URL}/deals/by-steam-app-ids?ids=${ids.join(',')}&titles=${encodeURIComponent(titles.join('|'))}`;
+        fetch(url, { credentials: 'include' })
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+                if (!cancelled && data?.deals) setSalesData(data.deals);
+            })
+            .catch(() => {});
+        return () => { cancelled = true; };
+    }, [topGames]);
+
+    useEffect(() => {
+        const ids = [
+            ...recommendations.map((g) => Number(g.appid ?? g.app_id)),
+            ...topGames.map((g) => Number(g.appid ?? g.app_id)),
+        ].filter((n) => Number.isFinite(n));
+        if (ids.length === 0) return;
+        let cancelled = false;
+        fetchReviewSummaries(ids).then((map) => {
+            if (!cancelled) setReviewSummaries((prev) => ({ ...prev, ...map }));
+        });
+        return () => { cancelled = true; };
+    }, [recommendations, topGames]);
+
     const featuredPick = recommendations[0] || null;
     const modelVersion = recommendationMeta?.algorithm || 'steam-owned-v3.0';
     const generatedAt = recommendationMeta?.generatedAt
         ? new Date(recommendationMeta.generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         : null;
 
+    const availableGenres = useMemo(() => {
+        const set = new Set();
+        recommendations.forEach((g) => (g.tags || []).forEach((t) => set.add(t)));
+        return Array.from(set).slice(0, 8);
+    }, [recommendations]);
+
+    const filteredRecs = useMemo(() => {
+        if (genreFilter === 'all') return recommendations;
+        return recommendations.filter((g) => (g.tags || []).includes(genreFilter));
+    }, [recommendations, genreFilter]);
+
+    const dealItems = useMemo(() => {
+        return topGames
+            .map((g) => {
+                const id = Number(g.appid ?? g.app_id);
+                const deal = salesData[id] || salesData[String(id)];
+                if (!deal || !deal.available || !Array.isArray(deal.offers)) return null;
+                const standard = deal.offers.filter((o) => /standard/i.test(o.edition?.name || ''));
+                const pool = standard.length > 0 ? standard : deal.offers;
+                const cheapestKeyshop = pool.filter((o) => !o.isOfficial).sort((a, b) => a.price - b.price)[0];
+                const cheapestOfficial = pool.filter((o) => o.isOfficial).sort((a, b) => a.price - b.price)[0];
+                const best = cheapestKeyshop || cheapestOfficial;
+                if (!best || !(best.discountPercent > 0)) return null;
+                return {
+                    ...g,
+                    _bestDiscount: best.discountPercent,
+                    _bestPrice: best.price,
+                    _bestMerchant: best.merchantName,
+                    _bestUrl: best.url,
+                    _officialPrice: cheapestOfficial?.price,
+                    _ksPrice: cheapestKeyshop?.price,
+                    _currency: deal.currency,
+                };
+            })
+            .filter(Boolean)
+            .sort((a, b) => b._bestDiscount - a._bestDiscount)
+            .slice(0, 8);
+    }, [topGames, salesData]);
+
+    const handleHoverPrefetch = (game) => {
+        const id = getAppId(game);
+        if (!Number.isFinite(id)) return;
+        prefetchGame(id);
+        prefetchSimilar(id);
+        prefetchDeals(id, game.name);
+        preloadImage(resolveHeaderImage(game));
+    };
+
     const renderGameCard = (game, options = {}) => {
-        const { compact = false } = options;
+        const { compact = false, eager = false } = options;
         return (
             <div
                 key={game.appid || game.app_id}
                 className="store-rec-card"
                 onClick={() => openGamePage(game)}
+                onMouseEnter={() => handleHoverPrefetch(game)}
+                onFocus={() => handleHoverPrefetch(game)}
             >
                 <div className="game-image-container">
-                    <img src={resolveHeaderImage(game)} alt={game.name} className="game-image" />
+                    <img
+                        src={resolveHeaderImage(game)}
+                        alt={game.name}
+                        className="game-image"
+                        loading={eager ? 'eager' : 'lazy'}
+                        decoding="async"
+                        fetchpriority={eager ? 'high' : 'auto'}
+                    />
                 </div>
                 <div className="store-rec-body">
                     <div className="store-rec-title">{game.name}</div>
+                    {(() => {
+                        const id = getAppId(game);
+                        const summary = reviewSummaries[id] || reviewSummaries[String(id)];
+                        return summary ? (
+                            <div style={{ marginBottom: 6 }}>
+                                <ReviewBadge summary={summary} compact={compact} />
+                            </div>
+                        ) : null;
+                    })()}
                     {settings.developer && !compact && game.relevance != null && (
                         <div className="store-rec-meta-row">
                             <span>Match {toPercent(game.relevance)}%</span>
@@ -180,7 +288,7 @@ function Home() {
                     <span className="store-section-caption">{caption}</span>
                 </div>
                 <div className="store-grid compact-grid">
-                    {games.map((game) => renderGameCard(game))}
+                    {games.map((game, idx) => renderGameCard(game, { eager: idx < 4 }))}
                 </div>
             </section>
         );
@@ -218,6 +326,17 @@ function Home() {
                             )}
                         </div>
                         <div className="store-hero-actions">
+                            <form className="store-hero-search" onSubmit={submitSearch}>
+                                <input
+                                    type="text"
+                                    placeholder="Search the Steam catalog..."
+                                    value={searchInput}
+                                    onChange={(e) => setSearchInput(e.target.value)}
+                                    className="store-hero-search-input"
+                                    aria-label="Search Steam"
+                                />
+                                <button type="submit" className="store-hero-search-btn">Search</button>
+                            </form>
                             <button type="button" className="secondary-btn store-hero-btn" onClick={jumpToTrending}>
                                 Browse trending
                             </button>
@@ -231,11 +350,18 @@ function Home() {
                                 <h3>Featured For You</h3>
                                 <span className="store-section-caption">Top pick from your library profile</span>
                             </div>
-                            <div className="store-featured-card" onClick={() => openGamePage(featuredPick)}>
+                            <div
+                                className="store-featured-card"
+                                onClick={() => openGamePage(featuredPick)}
+                                onMouseEnter={() => handleHoverPrefetch(featuredPick)}
+                            >
                                 <img
                                     src={resolveHeaderImage(featuredPick)}
                                     alt={featuredPick.name}
                                     className="store-featured-image"
+                                    loading="eager"
+                                    decoding="async"
+                                    fetchpriority="high"
                                 />
                                 <div className="store-featured-overlay">
                                     <div className="store-featured-label">Top pick for you</div>
@@ -319,8 +445,72 @@ function Home() {
                                 <h3>Recommended For You</h3>
                                 <span className="store-section-caption">Based on your owned library</span>
                             </div>
+                            {availableGenres.length > 0 && (
+                                <div className="store-filter-chips">
+                                    <button
+                                        className={`store-filter-chip ${genreFilter === 'all' ? 'active' : ''}`}
+                                        onClick={() => setGenreFilter('all')}
+                                    >
+                                        All
+                                    </button>
+                                    {availableGenres.map((g) => (
+                                        <button
+                                            key={g}
+                                            className={`store-filter-chip ${genreFilter === g ? 'active' : ''}`}
+                                            onClick={() => setGenreFilter(g)}
+                                        >
+                                            {g}
+                                        </button>
+                                    ))}
+                                </div>
+                            )}
                             <div className="store-grid">
-                                {recommendations.slice(0, 12).map((game) => renderGameCard(game))}
+                                {filteredRecs.slice(0, 12).map((game, idx) => renderGameCard(game, { eager: idx < 4 }))}
+                            </div>
+                            {filteredRecs.length === 0 && (
+                                <div className="store-message-card"><p>No matches for that filter.</p></div>
+                            )}
+                        </section>
+                    )}
+
+                    {dealItems.length > 0 && (
+                        <section className="store-section-block">
+                            <div className="store-section-header">
+                                <h3>On Sale Now</h3>
+                                <span className="store-section-caption">Steepest discounts via gg.deals</span>
+                            </div>
+                            <div className="store-grid compact-grid">
+                                {dealItems.map((game, idx) => (
+                                    <div
+                                        key={`sale_${getAppId(game)}`}
+                                        className="store-rec-card store-sale-card"
+                                        onClick={() => openGamePage(game)}
+                                        onMouseEnter={() => handleHoverPrefetch(game)}
+                                    >
+                                        <div className="game-image-container">
+                                            <img
+                                                src={resolveHeaderImage(game)}
+                                                alt={game.name}
+                                                className="game-image"
+                                                loading={idx < 4 ? 'eager' : 'lazy'}
+                                                decoding="async"
+                                            />
+                                            <span className="store-sale-badge">-{game._bestDiscount}%</span>
+                                        </div>
+                                        <div className="store-rec-body">
+                                            <div className="store-rec-title">{game.name}</div>
+                                            <div className="store-rec-meta-row">
+                                                {Number.isFinite(game._officialPrice) && (
+                                                    <span>Official ${game._officialPrice.toFixed(2)}</span>
+                                                )}
+                                                {Number.isFinite(game._ksPrice) && (
+                                                    <span>Keys ${game._ksPrice.toFixed(2)}</span>
+                                                )}
+                                            </div>
+                                            <div className="store-rec-footer">View details →</div>
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         </section>
                     )}
@@ -337,7 +527,7 @@ function Home() {
                             <div className="store-message-card"><p>Top games are unavailable right now.</p></div>
                         ) : (
                             <div className="store-grid compact-grid">
-                                {topGames.slice(0, 8).map((game) => renderGameCard(game, { compact: true }))}
+                                {topGames.slice(0, 8).map((game, idx) => renderGameCard(game, { compact: true, eager: idx < 4 }))}
                             </div>
                         )}
                     </section>

@@ -6,6 +6,21 @@ import App from './App.jsx'
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 const TOKEN_KEY = 'sp_jwt';
 
+if (typeof document !== 'undefined' && BACKEND_URL) {
+  try {
+    const origin = new URL(BACKEND_URL).origin;
+    const link = document.createElement('link');
+    link.rel = 'preconnect';
+    link.href = origin;
+    link.crossOrigin = 'anonymous';
+    document.head.appendChild(link);
+    const dns = document.createElement('link');
+    dns.rel = 'dns-prefetch';
+    dns.href = origin;
+    document.head.appendChild(dns);
+  } catch {}
+}
+
 if (typeof window !== 'undefined' && window.location.hash) {
   const params = new URLSearchParams(window.location.hash.slice(1));
   const captured = params.get('token') || params.get('pending');

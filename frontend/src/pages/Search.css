@@ -1,0 +1,212 @@
+.search-page {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 32px 24px 64px;
+}
+
+.search-page-form {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 28px;
+}
+
+.search-page-input {
+    flex: 1;
+    background: #1b2838;
+    border: 1px solid #2a3f5f;
+    border-radius: 8px;
+    color: #e7eef5;
+    font-size: 16px;
+    padding: 14px 16px;
+    outline: none;
+}
+
+.search-page-input:focus {
+    border-color: #66c0f4;
+    box-shadow: 0 0 0 3px rgba(102, 192, 244, 0.2);
+}
+
+.search-page-btn {
+    background: #66c0f4;
+    color: #0c1929;
+    font-weight: 600;
+    border: none;
+    border-radius: 8px;
+    padding: 0 24px;
+    cursor: pointer;
+}
+
+.search-page-btn:hover { background: #8ed1ff; }
+
+.search-status {
+    color: #c6d4df;
+    padding: 24px 0;
+    text-align: center;
+}
+
+.search-error { color: #ff6b6b; }
+
+.search-results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 16px;
+}
+
+.search-result-card {
+    background: linear-gradient(180deg, #1b2838 0%, #16202d 100%);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    cursor: pointer;
+    transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.search-result-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(102, 192, 244, 0.5);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.search-result-image {
+    width: 100%;
+    aspect-ratio: 460 / 215;
+    object-fit: cover;
+    display: block;
+    background: #0c1929;
+}
+
+.search-result-info {
+    padding: 12px 14px 14px;
+}
+
+.search-result-title {
+    color: #ffffff;
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.search-result-meta {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.search-price {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    color: #c6d4df;
+    font-size: 13px;
+}
+
+.search-price-strike {
+    text-decoration: line-through;
+    color: #6c7d8e;
+}
+
+.search-price-final {
+    color: #beee11;
+    font-weight: 600;
+}
+
+.search-price-discount {
+    background: #4c6b22;
+    color: #beee11;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-weight: 700;
+    font-size: 12px;
+}
+
+.search-meta-pill {
+    background: rgba(255, 255, 255, 0.06);
+    color: #c6d4df;
+    padding: 2px 8px;
+    border-radius: 999px;
+    font-size: 12px;
+}
+
+.navbar-search {
+    position: relative;
+    margin-left: 18px;
+    flex: 1;
+    max-width: 360px;
+}
+
+.navbar-search-input {
+    width: 100%;
+    background: #1b2838;
+    border: 1px solid #2a3f5f;
+    border-radius: 999px;
+    color: #e7eef5;
+    font-size: 14px;
+    padding: 8px 14px;
+    outline: none;
+}
+
+.navbar-search-input:focus {
+    border-color: #66c0f4;
+    box-shadow: 0 0 0 2px rgba(102, 192, 244, 0.2);
+}
+
+.navbar-search-dropdown {
+    position: absolute;
+    top: calc(100% + 6px);
+    left: 0;
+    right: 0;
+    background: #16202d;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    z-index: 50;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.navbar-search-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 10px;
+    cursor: pointer;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.navbar-search-item:last-child { border-bottom: none; }
+.navbar-search-item:hover, .navbar-search-item.active { background: #1f3047; }
+
+.navbar-search-thumb {
+    width: 92px;
+    height: 34px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: #0c1929;
+    flex-shrink: 0;
+}
+
+.navbar-search-name {
+    color: #e7eef5;
+    font-size: 13px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.navbar-search-empty {
+    padding: 12px;
+    color: #8f98a0;
+    font-size: 13px;
+}
+
+.navbar-search-footer {
+    padding: 10px 12px;
+    color: #66c0f4;
+    font-size: 12px;
+    text-align: center;
+    cursor: pointer;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.navbar-search-footer:hover { background: #1f3047; }
