@@ -22,21 +22,21 @@ const UserHeader = ({ user, isSteamUser }) => {
     return (
         <div className="header-section">
             {isSteamUser && (
-        <div className="gear-wrapper">
-            <button
-                className="header-gear-btn"
-                onClick={() => setShowPrivacy(true)}
-            >
-                <img src={gearIcon} alt="Settings" />
-            </button>
+                <div className="gear-wrapper">
+                    <button
+                        className="header-gear-btn"
+                        onClick={() => setShowPrivacy(true)}
+                    >
+                    <img src={gearIcon} alt="Settings" />
+                    </button>
 
-            {showPrivacy && (
-                <div className="privacy-popup">
-                    Privacy settings are inherited from Steam.
+                    {showPrivacy && (
+                        <div className="privacy-popup">
+                            Privacy settings are inherited from Steam.
+                        </div>
+                    )}
                 </div>
-            )}
-                </div>
-    )}  
+            )}  
 
             <img
                 src={user.avatar || noAvatar}
