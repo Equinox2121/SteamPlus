@@ -12,12 +12,16 @@ SteamPlus consolidates deals from trusted vendors into a single, streamlined int
 
 <img src=images/SteamPlusHome.png alt="SteamPlus Home"/>
 
+<div style="display: flex; justify-content: space-around;">
+  <img src=images/SteamPlusHome.png alt="SteamPlus Home"/>
+  <img src=images/SteamPlusProfile.png alt="SteamPlus Profile"/>
+</div>
+
 ## Tech Stack
 *   **Frontend:** React built with **Vite** for optimized performance and fast builds.
 *   **Backend:** Node.js & Express API for server-side logic.
 *   **Database:** MySQL for persistent storage of user and application data.
 *   **Deployment:** Azure Static Web Apps integrated via GitHub Actions CI/CD pipelines.
-
 
 ## Requirements
 * Install [Node.JS](https://nodejs.org/en).
