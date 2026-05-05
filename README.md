@@ -10,11 +10,14 @@ Despite Steam’s massive library, users frequently miss out on high-value deals
 **The Solution:**
 SteamPlus consolidates deals from trusted vendors into a single, streamlined interface. Beyond just savings, we provide features the native Steam client lacks, such as advanced profile statistics, global leaderboards, and enhanced data visualization tools.
 
-<img src=images/SteamPlusHome.png alt="SteamPlus Home"/>
+<div align="center">
+  <img src="images/SteamPlusHome.png" alt="SteamPlus Home" width="100%" />
+  <p><b>SteamPlus Home Page</b></p>
+</div>
 
-<div style="display: flex; justify-content: space-around;">
-  <img src=images/SteamPlusHome.png alt="SteamPlus Home"/>
-  <img src=images/SteamPlusProfile.png alt="SteamPlus Profile"/>
+<div align="center">
+  <img src="images/SteamPlusProfile.png" alt="SteamPlus Profile" width="100%" />
+  <p><b>SteamPlus Profile Page</b></p>
 </div>
 
 ## Tech Stack
