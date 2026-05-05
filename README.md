@@ -10,14 +10,26 @@ Despite Steam’s massive library, users frequently miss out on high-value deals
 **The Solution:**
 SteamPlus consolidates deals from trusted vendors into a single, streamlined interface. Beyond just savings, we provide features the native Steam client lacks, such as advanced profile statistics, global leaderboards, and enhanced data visualization tools.
 
-<div align="center">
-  <img src="images/SteamPlusHome.png" alt="SteamPlus Home" width="100%" />
-  <p><b>SteamPlus Home Page</b></p>
+<div style="display: flex; justify-content: space-around;">
+    <div>
+        <img src="images/SteamPlusHome.png" alt="SteamPlus Home" width="100%" />
+        <p align="center"><b>Smart Discovery Dashboard (Home Page)</b></p>
+    </div>
+    <div>
+        <img src="images/SteamPlusProfile.png" alt="SteamPlus Profile" width="100%" />
+        <p align="center"><b>Personalized Activity Statistics (Profile Page)</b></p>
+    </div>
 </div>
 
-<div align="center">
-  <img src="images/SteamPlusProfile.png" alt="SteamPlus Profile" width="100%" />
-  <p><b>SteamPlus Profile Page</b></p>
+<div style="display: flex; justify-content: space-around;">
+    <div>
+        <img src="images/RecommendationCategory1.png" alt="Recommendation Category Example" width="100%" />
+        <p align="center"><b>Tailored Game Recommendations</b></p>
+    </div>
+    <div>
+        <img src="images/GamePage1.png" alt="Game Page Example" width="100%" />
+        <p align="center"><b>Advanced Game Details</b></p>
+    </div>
 </div>
 
 ## Tech Stack
