@@ -4,10 +4,10 @@ SteamPlus is a full-stack web application designed to enhance the Steam user exp
 
 <img src="frontend/src/assets/SteamPlus%20Logo.png" alt="SteamPlus Logo" width="30%" />
 
-**Problem Statement**
+**Problem Statement:**
 Despite Steam’s massive library, users frequently miss out on high-value deals because the platform's discovery algorithms often prioritize popularity over affordability. This forces budget-conscious gamers to navigate multiple third-party sites just to find a fair price.
 
-**The Solution**
+**The Solution:**
 SteamPlus consolidates deals from trusted vendors into a single, streamlined interface. Beyond just savings, we provide features the native Steam client lacks, such as advanced profile statistics, global leaderboards, and enhanced data visualization tools.
 
 Developed by **Group 07** for **CS 330: Intro to Software Engineering**.
