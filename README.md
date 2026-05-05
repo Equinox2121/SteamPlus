@@ -10,14 +10,7 @@ Despite Steam’s massive library, users frequently miss out on high-value deals
 **The Solution:**
 SteamPlus consolidates deals from trusted vendors into a single, streamlined interface. Beyond just savings, we provide features the native Steam client lacks, such as advanced profile statistics, global leaderboards, and enhanced data visualization tools.
 
-Developed by **Group 07** for **CS 330: Intro to Software Engineering**.
-* Ethan Horton  
-* Yigit Arslan  
-* Devon Staley  
-* Maddox Schultz  
-* Dylan Miller  
-
-<img src=images/SteamPlus Home.png alt="SteamPlus Home"/>
+<img src=images/SteamPlusHome.png alt="SteamPlus Home"/>
 
 ## Tech Stack
 *   **Frontend:** React built with **Vite** for optimized performance and fast builds.
@@ -59,3 +52,11 @@ Open a terminal in the `frontend` folder and run:
 ## Developer Configuration
 
 Access `frontend/src/settings.js` to enable Developer Mode.
+
+## Information
+Developed by **Group 07** for **CS 330: Intro to Software Engineering**.
+* Ethan Horton  
+* Yigit Arslan  
+* Devon Staley  
+* Maddox Schultz  
+* Dylan Miller  
