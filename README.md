@@ -42,12 +42,14 @@ both can be located in the `package.json` scripts.
 ## Running Locally
 
 Open a terminal in the `backend` folder and run:
-```cd backend```
-```npx nodemon server.js```
+
+    cd backend
+    npx nodemon server.js
 
 Open a terminal in the `frontend` folder and run:
-```cd frontend```
-```npm run dev```
+
+    cd frontend
+    npm run dev
 
 ## Developer Configuration
 
