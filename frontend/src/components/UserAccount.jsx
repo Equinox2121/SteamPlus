@@ -6,9 +6,9 @@ import gearIcon from "../assets/Gear_Icon.png";
 import "../pages/Store.css";
 import "../pages/Profile.css";
 
-const UserHeader = ({ user }) => {
+const UserHeader = ({ user, isSteamUser }) => {
     const [showPrivacy, setShowPrivacy] = useState(false);
-
+    
     useEffect(() => {
         if (!showPrivacy) return;
 
@@ -21,20 +21,22 @@ const UserHeader = ({ user }) => {
 
     return (
         <div className="header-section">
-            <div className="gear-wrapper">
-                <button
-                    className="header-gear-btn"
-                    onClick={() => setShowPrivacy(true)}
-                >
-                    <img src={gearIcon} alt="Settings" />
-                </button>
+            {isSteamUser && (
+        <div className="gear-wrapper">
+            <button
+                className="header-gear-btn"
+                onClick={() => setShowPrivacy(true)}
+            >
+                <img src={gearIcon} alt="Settings" />
+            </button>
 
-                {showPrivacy && (
-                    <div className="privacy-popup">
-                        Privacy settings are inherited from Steam.
-                    </div>
-                )}
-            </div>
+            {showPrivacy && (
+                <div className="privacy-popup">
+                    Privacy settings are inherited from Steam.
+                </div>
+            )}
+                </div>
+    )}  
 
             <img
                 src={user.avatar || noAvatar}
@@ -248,6 +250,8 @@ function UserAccount({ user, loading, logout }) {
     const [statsLoadingGame, setStatsLoadingGame] = useState(false);
     const [gameStatsCache, setGameStatsCache] = useState({});
 
+    const [isSteamUser, setIsSteamUser] = useState(false);
+
     const navigate = useNavigate();
 
     const fetchLibrary = () => {
@@ -267,7 +271,10 @@ function UserAccount({ user, loading, logout }) {
 
     const fetchUserStats = () => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-stats`, { credentials: 'include' })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("not steam user"); 
+                return res.json();
+            })
             .then(data => {
                 setStats({
                     recentPlaytime: data.recentPlaytimeHrs || 0,
@@ -275,8 +282,13 @@ function UserAccount({ user, loading, logout }) {
                     totalGames: data.totalGamesOwned || 0,
                     accountLevel: data.steamLevel || 0
                 });
+
+                setIsSteamUser(true);
             })
-            .catch(err => console.error("Stats fetch failed:", err));
+            .catch(err => {
+                console.error("Stats fetch failed:", err);
+                setIsSteamUser(false);
+            });
     };
 
     const fetchExtendedUserStats = () => {
@@ -362,7 +374,7 @@ function UserAccount({ user, loading, logout }) {
 
     return (
         <div className="home-container">
-            <UserHeader user={user} />
+            <UserHeader user={user} isSteamUser={isSteamUser} />
 
             <StatsDashboard
                 stats={stats}
