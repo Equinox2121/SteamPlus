@@ -2,20 +2,53 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import noAvatar from "../assets/NoAvatar.png";
 import statsIcon from "../assets/Stats_Icon.png";
+import gearIcon from "../assets/Gear_Icon.png";
 import "../pages/Store.css";
 import "../pages/Profile.css";
 
-const UserHeader = ({ user }) => (
-    <div className="header-section">
-        <img
-            src={user.avatar || noAvatar}
-            alt={`${user.username}'s avatar`}
-            className="avatar-img"
-            onError={(e) => { e.currentTarget.src = noAvatar; }}
-        />
-        <h2 style={{ margin: 0 }}>Welcome, {user.username}!</h2>
-    </div>
-);
+const UserHeader = ({ user, isSteamUser }) => {
+    const [showPrivacy, setShowPrivacy] = useState(false);
+    
+    useEffect(() => {
+        if (!showPrivacy) return;
+
+        const timer = setTimeout(() => {
+            setShowPrivacy(false);
+        }, 5000);
+
+        return () => clearTimeout(timer);
+    }, [showPrivacy]);
+
+    return (
+        <div className="header-section">
+            {isSteamUser && (
+                <div className="gear-wrapper">
+                    <button
+                        className="header-gear-btn"
+                        onClick={() => setShowPrivacy(true)}
+                    >
+                    <img src={gearIcon} alt="Settings" />
+                    </button>
+
+                    {showPrivacy && (
+                        <div className="privacy-popup">
+                            Privacy settings are inherited from Steam.
+                        </div>
+                    )}
+                </div>
+            )}  
+
+            <img
+                src={user.avatar || noAvatar}
+                alt={`${user.username}'s avatar`}
+                className="avatar-img"
+                onError={(e) => { e.currentTarget.src = noAvatar; }}
+            />
+
+            <h2 style={{ margin: 0 }}>Welcome, {user.username}!</h2>
+        </div>
+    );
+};
 
 const StatsDashboard = ({
     stats,
@@ -217,6 +250,8 @@ function UserAccount({ user, loading, logout }) {
     const [statsLoadingGame, setStatsLoadingGame] = useState(false);
     const [gameStatsCache, setGameStatsCache] = useState({});
 
+    const [isSteamUser, setIsSteamUser] = useState(false);
+
     const navigate = useNavigate();
 
     const fetchLibrary = () => {
@@ -236,7 +271,10 @@ function UserAccount({ user, loading, logout }) {
 
     const fetchUserStats = () => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-stats`, { credentials: 'include' })
-            .then(res => res.json())
+            .then(res => {
+                if (!res.ok) throw new Error("not steam user"); 
+                return res.json();
+            })
             .then(data => {
                 setStats({
                     recentPlaytime: data.recentPlaytimeHrs || 0,
@@ -244,8 +282,13 @@ function UserAccount({ user, loading, logout }) {
                     totalGames: data.totalGamesOwned || 0,
                     accountLevel: data.steamLevel || 0
                 });
+
+                setIsSteamUser(true);
             })
-            .catch(err => console.error("Stats fetch failed:", err));
+            .catch(err => {
+                console.error("Stats fetch failed:", err);
+                setIsSteamUser(false);
+            });
     };
 
     const fetchExtendedUserStats = () => {
@@ -331,7 +374,7 @@ function UserAccount({ user, loading, logout }) {
 
     return (
         <div className="home-container">
-            <UserHeader user={user} />
+            <UserHeader user={user} isSteamUser={isSteamUser} />
 
             <StatsDashboard
                 stats={stats}
