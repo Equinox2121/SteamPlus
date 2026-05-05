@@ -42,18 +42,18 @@ both can be located in the `package.json` scripts.
 ## Running Locally
 
 Open a terminal in the `backend` folder and run:
-    cd backend
-    npx nodemon server.js
+```cd backend```
+```npx nodemon server.js```
 
 Open a terminal in the `frontend` folder and run:
-    cd frontend
-    npm run dev
+```cd frontend```
+```npm run dev```
 
 ## Developer Configuration
 
 Access `frontend/src/settings.js` to enable Developer Mode.
 
-## Information
+## Project Information
 Developed by **Group 07** for **CS 330: Intro to Software Engineering**.
 * Ethan Horton  
 * Yigit Arslan  
