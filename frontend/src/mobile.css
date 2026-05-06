@@ -10,18 +10,64 @@
     }
     .navbar-content {
         flex-wrap: wrap;
-        gap: 8px;
+        gap: 10px;
         padding: 0 12px;
+        align-items: center;
     }
     .navbar-left {
-        gap: 16px;
+        gap: 12px;
         flex: 1 1 100%;
         flex-wrap: wrap;
+        align-items: center;
+    }
+    .navbar-logo {
         order: 1;
+        flex: 0 0 auto;
+    }
+    .navbar-search {
+        order: 2;
+        flex: 1 1 auto;
+        min-width: 180px;
+        max-width: 100%;
+        position: relative;
+    }
+    .navbar-search-input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .navbar-search-dropdown {
+        position: absolute;
+        top: calc(100% + 4px);
+        left: 0;
+        right: 0;
+        width: auto;
+        max-width: 100vw;
+        z-index: 1100;
+    }
+    .navbar-links {
+        order: 3;
+        gap: 18px;
+        font-size: 12px;
+        flex: 1 1 100%;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        padding: 4px 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .navbar-links::-webkit-scrollbar {
+        display: none;
+    }
+    .navbar-link {
+        flex: 0 0 auto;
+        padding: 6px 2px;
     }
     .navbar-right {
         order: 2;
         margin-left: auto;
+        flex: 0 0 auto;
     }
     .navbar-logo span {
         font-size: 18px;
@@ -29,32 +75,6 @@
     }
     .navbar-logo img {
         height: 32px;
-    }
-    .navbar-links {
-        gap: 14px;
-        font-size: 12px;
-        flex: 1 1 100%;
-        order: 1;
-        overflow-x: auto;
-        overflow-y: hidden;
-        white-space: nowrap;
-        padding-bottom: 4px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .navbar-links::-webkit-scrollbar {
-        display: none;
-    }
-    .navbar-search {
-        flex: 1 1 100%;
-        order: 3;
-    }
-    .navbar-search-input {
-        width: 100%;
-        box-sizing: border-box;
-    }
-    .navbar-search-dropdown {
-        width: 100%;
     }
 
     .home-container {
@@ -95,17 +115,50 @@
         font-size: 1.6em;
     }
     .game-tabs {
-        flex-wrap: wrap;
-        gap: 4px;
+        flex-wrap: nowrap;
+        gap: 0;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+        margin: 0 -8px;
+        padding: 0 8px;
+    }
+    .game-tabs::-webkit-scrollbar {
+        display: none;
     }
     .game-tab {
-        flex: 1 1 auto;
+        flex: 0 0 auto;
         min-width: 0;
         font-size: 12px;
-        padding: 8px 10px;
+        padding: 10px 14px;
+        scroll-snap-align: start;
     }
     .screenshots-grid {
         grid-template-columns: repeat(3, 1fr);
+    }
+    .screenshot-item {
+        height: auto !important;
+        aspect-ratio: 16/9;
+        object-fit: cover;
+    }
+    .main-header-image,
+    .sidebar-header-image {
+        max-height: 280px;
+        object-fit: cover;
+        object-position: center;
+    }
+    .game-card .game-image,
+    .game-image-container .game-image {
+        object-fit: cover;
+        object-position: center;
+        width: 100%;
+        height: 100%;
+    }
+    .game-image-container {
+        aspect-ratio: 460/215;
     }
 
     .stats-row {
@@ -229,9 +282,22 @@
     .recommendations-grid {
         grid-template-columns: 1fr 1fr !important;
     }
+    .rec-image {
+        aspect-ratio: 460/215;
+        width: 100%;
+        height: auto;
+        object-fit: cover;
+    }
 
     .game-meta-list {
         font-size: 0.92em;
+    }
+
+    .navbar-search {
+        flex: 1 1 100%;
+    }
+    .navbar-logo {
+        flex: 0 0 auto;
     }
 }
 
