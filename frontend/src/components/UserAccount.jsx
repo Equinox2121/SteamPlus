@@ -1,3 +1,17 @@
+/**
+ * UserAccount.jsx
+ *
+ * Provides all data shown on Profile page for SteamPlus.
+ * 
+ * Responsibilities:
+ * - Displays user profile header
+ * - Shows Steam library games
+ * - Renders user statistics and extended statistics data
+ * - Handles game-specific stats/achievements modal
+ * - Manages all Steam-related API calls
+ * - Handles caching for performance optimization
+ */
+
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from "react-router-dom";
 import noAvatar from "../assets/NoAvatar.png";
@@ -6,9 +20,16 @@ import gearIcon from "../assets/Gear_Icon.png";
 import "../pages/Store.css";
 import "../pages/Profile.css";
 
+/**
+ * UserHeader component
+ * Displays user avatar, username, and optional Steam privacy indicator
+ */
 const UserHeader = ({ user, isSteamUser }) => {
     const [showPrivacy, setShowPrivacy] = useState(false);
     
+    /**
+     * Auto-hide privacy popup after 5 seconds when triggered
+     */
     useEffect(() => {
         if (!showPrivacy) return;
 
@@ -21,6 +42,7 @@ const UserHeader = ({ user, isSteamUser }) => {
 
     return (
         <div className="header-section">
+            {/* Steam-specific settings button - "Privacy settings inhertied from Steam" */}
             {isSteamUser && (
                 <div className="gear-wrapper">
                     <button
@@ -30,6 +52,7 @@ const UserHeader = ({ user, isSteamUser }) => {
                     <img src={gearIcon} alt="Settings" />
                     </button>
 
+                    {/* Temporary privacy message popup */}
                     {showPrivacy && (
                         <div className="privacy-popup">
                             Privacy settings are inherited from Steam.
@@ -38,6 +61,7 @@ const UserHeader = ({ user, isSteamUser }) => {
                 </div>
             )}  
 
+            {/* User avatar with fallback image */}
             <img
                 src={user.avatar || noAvatar}
                 alt={`${user.username}'s avatar`}
@@ -50,6 +74,11 @@ const UserHeader = ({ user, isSteamUser }) => {
     );
 };
 
+/**
+ * StatsDashboard component
+ * Displays user-level and Steam gameplay statistics
+ * Supports expandable detailed stats view
+ */
 const StatsDashboard = ({
     stats,
     gamesCount,
@@ -59,10 +88,13 @@ const StatsDashboard = ({
     extendedLoading
 }) => (
     <div className={`stats-dashboard ${showExpanded ? "expanded" : ""}`}>
+
+        {/* Toggle for expanded stats view */}
         <div className="stats-toggle" onClick={toggleExpandedStats}>
             {showExpanded ? "Show less" : "Show more"}
         </div>
 
+        {/* Primary stats row - Shown by default */}
         <div className="stats-row" onClick={toggleExpandedStats}>
             <div className="dash-stat">
                 <span className="label">Steam Level</span>
@@ -85,8 +117,11 @@ const StatsDashboard = ({
             </div>
         </div>
 
+        {/* Expanded stats section (lazy loaded) */}
         {showExpanded && (
             <div className="expanded-row">
+
+                {/* Loading state for extended stats */}
                 {extendedLoading ? (
                     <p>Loading...</p>
                 ) : extendedStats && (
@@ -125,11 +160,19 @@ const StatsDashboard = ({
     </div>
 );
 
+/**
+ * LibraryGrid component
+ * Displays user's Steam game library as a grid of game cards
+ */
 const LibraryGrid = ({ games, loading, onGameClick, onStatsClick }) => {
+
+    // Loading state before games are fetched
     if (loading) return <p>Loading your games...</p>;
 
     return (
         <div className="library-container">
+
+            {/* Render each game card */}
             {games.map(game => (
                 <div
                     key={game.appid}
@@ -141,6 +184,8 @@ const LibraryGrid = ({ games, loading, onGameClick, onStatsClick }) => {
                             src={game.header_image}
                             alt={game.name}
                             className="game-image"
+
+                            // Fallback image if Steam image fails
                             onError={(e) => {
                                 e.currentTarget.src =
                                     'https://community.cloudflare.steamstatic.com/public/images/applications/community/unknown_game.jpg';
@@ -152,17 +197,19 @@ const LibraryGrid = ({ games, loading, onGameClick, onStatsClick }) => {
                         <div className="game-name-container">
                             <div className="game-name-text">{game.name}</div>
 
+                            {/* Button to open game stats modal */}
                             <button
                                 className="stats-icon-btn"
                                 onClick={(e) => {
-                                    e.stopPropagation();
+                                    e.stopPropagation(); // prevent card navigation when clicking stats icon
                                     onStatsClick(game.appid);
                                 }}
                             >
                                 <img src={statsIcon} alt="Stats" />
                             </button>
                         </div>
-
+                        
+                        {/* Playtime display on game card*/}
                         {game.playtime_forever !== undefined && (
                             <div className="playtime-text">
                                 {Math.round(game.playtime_forever / 60)} hours on record
@@ -175,14 +222,23 @@ const LibraryGrid = ({ games, loading, onGameClick, onStatsClick }) => {
     );
 };
 
+/**
+ * GameStatsModal component
+ * Displays detailed stats for a selected game in a modal overlay
+ */
 const GameStatsModal = ({ isOpen, onClose, loading, activeStats }) => {
+
+    // Do not render modal if not active
     if (!isOpen) return null;
 
     return (
         <div className="stats-overlay" onClick={onClose}>
             <div className="stats-modal" onClick={(e) => e.stopPropagation()}>
+
+                {/* Close button */}
                 <button className="close-btn" onClick={onClose}>✕</button>
 
+                {/* Loading / content states */}
                 {loading ? (
                     <p>Loading stats...</p>
                 ) : activeStats ? (
@@ -196,6 +252,7 @@ const GameStatsModal = ({ isOpen, onClose, loading, activeStats }) => {
                             </span>
                         </div>
 
+                        {/* Achievement grid (limited preview) */}
                         <div className="achievements-grid">
                             {activeStats.achievements.slice(0, 12).map((ach, i) => (
                                 <div
@@ -208,7 +265,8 @@ const GameStatsModal = ({ isOpen, onClose, loading, activeStats }) => {
                                 </div>
                             ))}
                         </div>
-
+                        
+                        {/* Optional custom stats section for specific games */}
                         {activeStats.customStats.length > 0 && (
                             <>
                                 <h4>Game Stats</h4>
@@ -230,10 +288,17 @@ const GameStatsModal = ({ isOpen, onClose, loading, activeStats }) => {
     );
 };
 
+/**
+ * Main UserAccount page component
+ * Combines all subcomponents and handles data fetching + state management
+ */
 function UserAccount({ user, loading, logout }) {
+
+    // Steam library state
     const [games, setGames] = useState([]);
     const [gamesLoading, setGamesLoading] = useState(false);
 
+    // User stats/achievements state
     const [stats, setStats] = useState({
         recentPlaytime: 0,
         activeGames: 0,
@@ -241,19 +306,25 @@ function UserAccount({ user, loading, logout }) {
         accountLevel: 0
     });
 
+    // Expanded stats UI state
     const [showExpanded, setShowExpanded] = useState(false);
     const [extendedStats, setExtendedStats] = useState(null);
     const [extendedLoading, setExtendedLoading] = useState(false);
 
+     // Game-specific modal state
     const [activeGameStats, setActiveGameStats] = useState(null);
     const [showOverlayId, setShowOverlayId] = useState(null);
     const [statsLoadingGame, setStatsLoadingGame] = useState(false);
     const [gameStatsCache, setGameStatsCache] = useState({});
 
+    // Cache if Steam User (used for privacy settings popup)
     const [isSteamUser, setIsSteamUser] = useState(false);
 
     const navigate = useNavigate();
 
+    /**
+     * Fetch user's Steam library
+     */
     const fetchLibrary = () => {
         setGamesLoading(true);
 
@@ -269,6 +340,9 @@ function UserAccount({ user, loading, logout }) {
             .finally(() => setGamesLoading(false));
     };
 
+    /**
+     * Fetch basic Steam user stats
+     */
     const fetchUserStats = () => {
         fetch(`${import.meta.env.VITE_BACKEND_URL}/steam/user-stats`, { credentials: 'include' })
             .then(res => {
@@ -291,6 +365,9 @@ function UserAccount({ user, loading, logout }) {
             });
     };
 
+    /**
+     * Fetch extended user statistics (lazy loaded)
+     */
     const fetchExtendedUserStats = () => {
         setExtendedLoading(true);
 
@@ -303,7 +380,11 @@ function UserAccount({ user, loading, logout }) {
             .finally(() => setExtendedLoading(false));
     };
 
+    /**
+     * Fetch stats for a specific game (with caching)
+     */
     const fetchGameSpecificStats = (appid) => {
+        // Return cached data if available
         if (gameStatsCache[appid]) {
             setActiveGameStats(gameStatsCache[appid]);
             setShowOverlayId(appid);
@@ -318,6 +399,8 @@ function UserAccount({ user, loading, logout }) {
             .then(res => res.json())
             .then(data => {
                 setActiveGameStats(data);
+
+                // Cache result for future use
                 setGameStatsCache(prev => ({ ...prev, [appid]: data }));
             })
             .catch(err => {
@@ -327,6 +410,10 @@ function UserAccount({ user, loading, logout }) {
             .finally(() => setStatsLoadingGame(false));
     };
 
+    /**
+     * Toggle expanded stats panel
+     * Lazy loads extended stats if not already fetched
+     */
     const toggleExpandedStats = () => {
         const next = !showExpanded;
         setShowExpanded(next);
@@ -336,6 +423,9 @@ function UserAccount({ user, loading, logout }) {
         }
     };
 
+    /**
+     * Initial data load when user changes
+     */
     useEffect(() => {
         if (user) {
             fetchLibrary();
@@ -345,6 +435,7 @@ function UserAccount({ user, loading, logout }) {
         }
     }, [user]);
 
+    // Loading state UI
     if (loading) {
         return (
             <div className="home-container">
@@ -355,6 +446,7 @@ function UserAccount({ user, loading, logout }) {
         );
     }
 
+    // Not logged-in UI
     if (!user) {
         return (
             <div className="home-container">
@@ -372,6 +464,7 @@ function UserAccount({ user, loading, logout }) {
         );
     }
 
+    // Main dashboard UI
     return (
         <div className="home-container">
             <UserHeader user={user} isSteamUser={isSteamUser} />
