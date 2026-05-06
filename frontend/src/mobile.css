@@ -18,11 +18,13 @@
     }
 
     .navbar-left {
-        display: contents;
+        flex: 1 1 100%;
+        gap: 16px;
+        min-width: 0;
+        align-items: center;
     }
 
     .navbar-logo {
-        order: 1;
         flex: 0 0 auto;
     }
     .navbar-logo span {
@@ -33,10 +35,32 @@
         height: 32px;
     }
 
-    .navbar-search {
-        order: 2;
-        flex: 1 1 140px;
+    .navbar-links {
+        flex: 1 1 auto;
         min-width: 0;
+        gap: 18px;
+        font-size: 12px;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        padding: 4px 2px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+        -webkit-overflow-scrolling: touch;
+    }
+    .navbar-links::-webkit-scrollbar {
+        display: none;
+    }
+    .navbar-link {
+        flex: 0 0 auto;
+        padding: 6px 2px;
+    }
+
+    .navbar-search {
+        flex: 1 1 0;
+        min-width: 0;
+        max-width: none;
+        margin-left: 0;
         position: relative;
     }
     .navbar-search-input {
@@ -54,30 +78,8 @@
     }
 
     .navbar-right {
-        order: 3;
         flex: 0 0 auto;
         margin-left: 0;
-    }
-
-    .navbar-links {
-        order: 4;
-        flex: 1 1 100%;
-        gap: 18px;
-        font-size: 12px;
-        overflow-x: auto;
-        overflow-y: hidden;
-        white-space: nowrap;
-        padding: 4px 2px;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-        -webkit-overflow-scrolling: touch;
-    }
-    .navbar-links::-webkit-scrollbar {
-        display: none;
-    }
-    .navbar-link {
-        flex: 0 0 auto;
-        padding: 6px 2px;
     }
 
     .modal-overlay {
@@ -306,12 +308,6 @@
         font-size: 0.92em;
     }
 
-    .navbar-search {
-        flex: 1 1 100%;
-    }
-    .navbar-logo {
-        flex: 0 0 auto;
-    }
 }
 
 @media (max-width: 380px) {

@@ -129,13 +129,19 @@
 
 .navbar-search {
     position: relative;
-    margin-left: 18px;
-    flex: 1;
-    max-width: 360px;
+}
+
+@media (min-width: 901px) {
+    .navbar-search {
+        margin-left: 18px;
+        flex: 1;
+        max-width: 360px;
+    }
 }
 
 .navbar-search-input {
     width: 100%;
+    box-sizing: border-box;
     background: #1b2838;
     border: 1px solid #2a3f5f;
     border-radius: 999px;

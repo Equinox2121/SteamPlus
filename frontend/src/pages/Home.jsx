@@ -12,13 +12,11 @@ function Home() {
     const navigate = useNavigate();
     const [categories, setCategories] = useState(null);
     const [recommendations, setRecommendations] = useState([]);
-    const [recommendationMeta, setRecommendationMeta] = useState(null);
     const [topGames, setTopGames] = useState([]);
     const [recsLoading, setRecsLoading] = useState(false);
     const [topGamesLoading, setTopGamesLoading] = useState(false);
     const [recsError, setRecsError] = useState("");
     const [genreFilter, setGenreFilter] = useState('all');
-    const [searchInput, setSearchInput] = useState('');
     const [salesData, setSalesData] = useState({});
     const [reviewSummaries, setReviewSummaries] = useState({});
 
@@ -53,17 +51,6 @@ function Home() {
             .slice(0, 4);
     };
 
-    const jumpToTrending = () => {
-        const el = document.getElementById('store-trending-section');
-        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    };
-
-    const submitSearch = (e) => {
-        e.preventDefault();
-        const q = searchInput.trim();
-        if (q.length >= 2) navigate(`/search?q=${encodeURIComponent(q)}`);
-    };
-
     useEffect(() => {
         let isMounted = true;
 
@@ -86,7 +73,6 @@ function Home() {
             if (!user) {
                 setRecommendations([]);
                 setCategories(null);
-                setRecommendationMeta(null);
                 setRecsError('');
                 return;
             }
@@ -103,14 +89,12 @@ function Home() {
                 if (isMounted) {
                     setRecommendations(Array.isArray(data.recommendations) ? data.recommendations : []);
                     setCategories(data.categories || null);
-                    setRecommendationMeta(data.meta || null);
                 }
             } catch (error) {
                 console.error(error);
                 if (isMounted) {
                     setRecommendations([]);
                     setCategories(null);
-                    setRecommendationMeta(null);
                     setRecsError('Could not load personalized recommendations right now.');
                 }
             } finally {
@@ -154,10 +138,6 @@ function Home() {
     }, [recommendations, topGames]);
 
     const featuredPick = recommendations[0] || null;
-    const modelVersion = recommendationMeta?.algorithm || 'steam-owned-v3.0';
-    const generatedAt = recommendationMeta?.generatedAt
-        ? new Date(recommendationMeta.generatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-        : null;
 
     const availableGenres = useMemo(() => {
         const set = new Set();
@@ -305,39 +285,6 @@ function Home() {
 
     return (
         <div className="home-container store-home-container">
-            <div className="header-section store-hero-header">
-                        <div className="store-hero-copy">
-                            <div className="store-kicker">Steam Store</div>
-                            <h2 className="store-page-title">Discover your next favorite game</h2>
-                            <p className="store-page-subtitle">
-                                View personalized recommendations based on your previous interests.
-                            </p>
-                            {user && settings.developer && (
-                                <div className="store-model-chip-row">
-                                    <span className="store-model-chip">{modelVersion}</span>
-                                    {generatedAt && <span className="store-model-chip">Updated {generatedAt}</span>}
-                                    {recommendationMeta?.seed && <span className="store-model-chip">Seed {recommendationMeta.seed}</span>}
-                                </div>
-                            )}
-                        </div>
-                        <div className="store-hero-actions">
-                            <form className="store-hero-search" onSubmit={submitSearch}>
-                                <input
-                                    type="text"
-                                    placeholder="Search the Steam catalog..."
-                                    value={searchInput}
-                                    onChange={(e) => setSearchInput(e.target.value)}
-                                    className="store-hero-search-input"
-                                    aria-label="Search Steam"
-                                />
-                                <button type="submit" className="store-hero-search-btn">Search</button>
-                            </form>
-                            <button type="button" className="secondary-btn store-hero-btn" onClick={jumpToTrending}>
-                                Browse trending
-                            </button>
-                        </div>
-                    </div>
-
                     {/* featured pick */}
                     {user && !recsLoading && !recsError && featuredPick && (
                         <section className="store-section-block">

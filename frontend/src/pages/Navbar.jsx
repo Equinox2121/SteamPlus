@@ -95,7 +95,7 @@ const Navbar = () => {
         const q = searchQuery.trim();
         if (q.length < 2) return;
         setSearchOpen(false);
-        navigate(`/search?q=${encodeURIComponent(q)}`);
+        navigate(`/search?q=${encodeURIComponent(q).replace(/%20/g, '+')}`);
     };
 
     const handleKeyDown = (e) => {
@@ -170,6 +170,7 @@ const Navbar = () => {
                             Support
                         </a>
                     </div>
+                </div>
 
                     <div className="navbar-search" ref={searchBoxRef}>
                         <input
@@ -209,7 +210,6 @@ const Navbar = () => {
                             </div>
                         )}
                     </div>
-                </div>
 
                 <div className="navbar-right">
                     {!loading && (
