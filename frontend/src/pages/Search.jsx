@@ -18,22 +18,33 @@ function Search() {
 
     useEffect(() => {
         const q = (params.get('q') || '').trim();
-        setQuery(q);
+        setQuery((prev) => (prev.trim() === q ? prev : q));
+    }, [params]);
+
+    useEffect(() => {
+        const q = query.trim();
         if (q.length < 2) {
             setResults([]);
+            setError('');
+            setLoading(false);
             return;
         }
-        setLoading(true);
-        setError('');
         const ctrl = new AbortController();
-        searchSteam(q, { limit: 24, signal: ctrl.signal })
-            .then((data) => setResults(data.results || []))
-            .catch((err) => {
-                if (err.name !== 'AbortError') setError('Search failed.');
-            })
-            .finally(() => setLoading(false));
-        return () => ctrl.abort();
-    }, [params]);
+        const t = setTimeout(() => {
+            setLoading(true);
+            setError('');
+            searchSteam(q, { limit: 24, signal: ctrl.signal })
+                .then((data) => setResults(data.results || []))
+                .catch((err) => {
+                    if (err.name !== 'AbortError') setError('Search failed.');
+                })
+                .finally(() => setLoading(false));
+        }, 250);
+        return () => {
+            clearTimeout(t);
+            ctrl.abort();
+        };
+    }, [query]);
 
     useEffect(() => {
         if (results.length === 0) return;
