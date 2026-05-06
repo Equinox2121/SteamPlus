@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { prefetchDeals, getCachedDeals } from '../utils/prefetch';
+import Loader from './Loader';
 
 const formatPrice = (n, currency) => {
     if (!Number.isFinite(Number(n))) return null;
@@ -77,7 +78,7 @@ function DealsWidget({ appid, gameName }) {
         };
     }, [data, editionId]);
 
-    if (loading) return <div className="deals-widget deals-widget-loading">Loading deals...</div>;
+    if (loading) return <div className="deals-widget deals-widget-loading"><Loader /></div>;
 
     if (!data || data.available === false) {
         const reason = data?.reason;
@@ -85,8 +86,10 @@ function DealsWidget({ appid, gameName }) {
             <div className="deals-widget deals-widget-empty">
                 <div className="deals-widget-title">Best Deals</div>
                 <div className="deals-widget-msg">
-                    {reason === 'not_found_on_aks' && 'Not listed on AllKeyShop yet.'}
-                    {reason === 'parse_failed' && 'Could not read AllKeyShop listing.'}
+                    {reason === 'not_found_on_itad' && 'Not listed on IsThereAnyDeal yet.'}
+                    {reason === 'no_deals' && 'No deals available right now.'}
+                    {reason === 'provider_unreachable' && 'Deals service is temporarily unreachable.'}
+                    {reason === 'provider_disabled' && 'Deals lookup is disabled.'}
                     {reason === 'invalid_appid' && 'Invalid app id.'}
                     {!reason && 'Deals unavailable right now.'}
                 </div>
@@ -105,7 +108,7 @@ function DealsWidget({ appid, gameName }) {
                 <div className="deals-widget-title">Best Deals</div>
                 {data.sourceUrl && (
                     <a className="deals-widget-link" href={data.sourceUrl} target="_blank" rel="noopener noreferrer">
-                        Full list on AllKeyShop →
+                        Full list on IsThereAnyDeal →
                     </a>
                 )}
             </div>
@@ -185,7 +188,7 @@ function DealsWidget({ appid, gameName }) {
             </div>
 
             <div className="deals-widget-footnote">
-                Data via AllKeyShop · keyshops are third-party resellers; check seller reputation before purchase · {data.fetchedAt && `prices fetched ${new Date(data.fetchedAt).toLocaleTimeString()}`}
+                Data via IsThereAnyDeal · keyshops are third-party resellers; check seller reputation before purchase · {data.fetchedAt && `prices fetched ${new Date(data.fetchedAt).toLocaleTimeString()}`}
             </div>
         </div>
     );

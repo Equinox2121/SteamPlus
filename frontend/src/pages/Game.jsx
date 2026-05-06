@@ -4,6 +4,7 @@ import { prefetchGame, prefetchSimilar, getCachedGame, getCachedSimilar, prefetc
 import DealsWidget from '../components/DealsWidget';
 import ReviewSection from '../components/ReviewSection';
 import ReviewBadge from '../components/ReviewBadge';
+import Loader from '../components/Loader';
 import './Game.css';
 import './Store.css';
 
@@ -88,7 +89,7 @@ const Game = () => {
         ];
     }, [gameData]);
 
-    if (loading) return <div className="game-page-loading">Loading game details...</div>;
+    if (loading) return <div className="game-page-loading"><Loader variant="page" /></div>;
     if (error) return <div className="game-page-error">Error: {error}</div>;
     if (!gameData) return <div className="game-page-error">Game not found.</div>;
 
@@ -116,10 +117,10 @@ const Game = () => {
                     <ReviewBadge summary={reviewSummary} />
                     <span className="store-overview-reviews-label">{reviewSummary.label}</span>
                     <span className="store-overview-reviews-stats">
-                        {reviewSummary.positivePercent != null ? `${reviewSummary.positivePercent}% of ${reviewSummary.total} site users recommend this game.` : `${reviewSummary.total} reviews`}
+                        {reviewSummary.positivePercent != null ? `${reviewSummary.positivePercent}% of ${reviewSummary.total} SteamPlus users recommend this game.` : `${reviewSummary.total} reviews`}
                     </span>
                     <button type="button" className="reviews-btn-secondary" onClick={() => setActiveTab('reviews')}>
-                        Read site reviews
+                        Read user reviews
                     </button>
                 </div>
             )}
@@ -219,7 +220,7 @@ const Game = () => {
     const renderSimilar = () => (
         <div className="recommendations-section">
             {recsLoading ? (
-                <div className="recs-loading">Finding similar games...</div>
+                <div className="recs-loading"><Loader variant="cards" count={6} /></div>
             ) : recommendations.length > 0 ? (
                 <div className="recommendations-grid">
                     {recommendations.map((rec, idx) => (
@@ -273,7 +274,7 @@ const Game = () => {
             <div className="game-tabs">
                 <button className={`game-tab ${activeTab === 'overview' ? 'active' : ''}`} onClick={() => setActiveTab('overview')}>Overview</button>
                 <button className={`game-tab ${activeTab === 'deals' ? 'active' : ''}`} onClick={() => setActiveTab('deals')}>Deals</button>
-                <button className={`game-tab ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>Site Reviews</button>
+                <button className={`game-tab ${activeTab === 'reviews' ? 'active' : ''}`} onClick={() => setActiveTab('reviews')}>User Reviews</button>
                 <button className={`game-tab ${activeTab === 'similar' ? 'active' : ''}`} onClick={() => setActiveTab('similar')}>Similar Games</button>
             </div>
 

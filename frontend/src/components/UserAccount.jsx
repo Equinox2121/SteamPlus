@@ -3,8 +3,25 @@ import { useNavigate } from "react-router-dom";
 import noAvatar from "../assets/NoAvatar.png";
 import statsIcon from "../assets/Stats_Icon.png";
 import gearIcon from "../assets/Gear_Icon.png";
+import { prefetchGame } from "../utils/prefetch";
+import Loader from "./Loader";
 import "../pages/Store.css";
 import "../pages/Profile.css";
+
+const SAVED_KEY = 'sp_saved_games';
+
+const readSavedAppIds = () => {
+    try {
+        const arr = JSON.parse(localStorage.getItem(SAVED_KEY) || '[]');
+        return Array.isArray(arr) ? arr.map(Number).filter(Number.isFinite) : [];
+    } catch {
+        return [];
+    }
+};
+
+const writeSavedAppIds = (ids) => {
+    try { localStorage.setItem(SAVED_KEY, JSON.stringify(ids)); } catch {}
+};
 
 const UserHeader = ({ user, isSteamUser }) => {
     const [showPrivacy, setShowPrivacy] = useState(false);
@@ -88,7 +105,7 @@ const StatsDashboard = ({
         {showExpanded && (
             <div className="expanded-row">
                 {extendedLoading ? (
-                    <p>Loading...</p>
+                    <Loader />
                 ) : extendedStats && (
                     <>
                         <div className="dash-stat">
@@ -126,7 +143,7 @@ const StatsDashboard = ({
 );
 
 const LibraryGrid = ({ games, loading, onGameClick, onStatsClick }) => {
-    if (loading) return <p>Loading your games...</p>;
+    if (loading) return <Loader variant="cards" count={6} />;
 
     return (
         <div className="library-container">
@@ -175,6 +192,65 @@ const LibraryGrid = ({ games, loading, onGameClick, onStatsClick }) => {
     );
 };
 
+const FavoritesGrid = ({ games, loading, onGameClick, onRemove }) => {
+    if (loading) {
+        return <Loader variant="cards" count={4} />;
+    }
+    if (games.length === 0) {
+        return (
+            <p style={{ color: '#8f98a0' }}>
+                No favorites yet, click the <span style={{ color: '#66c0f4' }}>☆ Save</span> button on any game's page to add it here.
+            </p>
+        );
+    }
+    return (
+        <div className="library-container">
+            {games.map((g) => (
+                <div
+                    key={g.appid}
+                    className="game-card"
+                    onClick={() => onGameClick(g.appid)}
+                >
+                    <div className="game-image-container">
+                        <img
+                            src={g.header_image}
+                            alt={g.name}
+                            className="game-image"
+                            loading="lazy"
+                            decoding="async"
+                            onError={(e) => {
+                                e.currentTarget.src =
+                                    'https://community.cloudflare.steamstatic.com/public/images/applications/community/unknown_game.jpg';
+                            }}
+                        />
+                    </div>
+                    <div className="game-info">
+                        <div className="game-name-container">
+                            <div className="game-name-text">{g.name}</div>
+                            <button
+                                title="Remove from favorites"
+                                onClick={(e) => { e.stopPropagation(); onRemove(g.appid); }}
+                                style={{
+                                    background: 'transparent',
+                                    border: 'none',
+                                    color: '#66c0f4',
+                                    fontSize: '20px',
+                                    cursor: 'pointer',
+                                    padding: '0 6px',
+                                    lineHeight: 1,
+                                    boxShadow: 'none',
+                                }}
+                            >
+                                ★
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const GameStatsModal = ({ isOpen, onClose, loading, activeStats }) => {
     if (!isOpen) return null;
 
@@ -184,7 +260,7 @@ const GameStatsModal = ({ isOpen, onClose, loading, activeStats }) => {
                 <button className="close-btn" onClick={onClose}>✕</button>
 
                 {loading ? (
-                    <p>Loading stats...</p>
+                    <Loader />
                 ) : activeStats ? (
                     <>
                         <h3 className="modal-title">Game Stats</h3>
@@ -252,7 +328,39 @@ function UserAccount({ user, loading, logout }) {
 
     const [isSteamUser, setIsSteamUser] = useState(false);
 
+    const [favorites, setFavorites] = useState([]);
+    const [favoritesLoading, setFavoritesLoading] = useState(false);
+
     const navigate = useNavigate();
+
+    const loadFavorites = async () => {
+        const ids = readSavedAppIds();
+        if (ids.length === 0) {
+            setFavorites([]);
+            setFavoritesLoading(false);
+            return;
+        }
+        setFavoritesLoading(true);
+        const results = await Promise.all(ids.map((id) => prefetchGame(id).then((d) => ({ id, d })).catch(() => ({ id, d: null }))));
+        const games = results
+            .filter(({ d }) => d && (d.name || d.header_image))
+            .map(({ id, d }) => ({
+                appid: id,
+                name: d.name || `App ${id}`,
+                header_image: d.header_image || `https://cdn.cloudflare.steamstatic.com/steam/apps/${id}/header.jpg`,
+            }));
+        const orderMap = new Map(ids.map((id, idx) => [id, idx]));
+        games.sort((a, b) => (orderMap.get(a.appid) ?? 0) - (orderMap.get(b.appid) ?? 0));
+        setFavorites(games);
+        setFavoritesLoading(false);
+    };
+
+    const removeFavorite = (appid) => {
+        const id = Number(appid);
+        const ids = readSavedAppIds().filter((n) => n !== id);
+        writeSavedAppIds(ids);
+        setFavorites((prev) => prev.filter((g) => g.appid !== id));
+    };
 
     const fetchLibrary = () => {
         setGamesLoading(true);
@@ -340,17 +448,25 @@ function UserAccount({ user, loading, logout }) {
         if (user) {
             fetchLibrary();
             fetchUserStats();
+            loadFavorites();
         } else {
             setGames([]);
+            setFavorites([]);
         }
     }, [user]);
+
+    useEffect(() => {
+        const onStorage = (e) => {
+            if (e.key === SAVED_KEY) loadFavorites();
+        };
+        window.addEventListener('storage', onStorage);
+        return () => window.removeEventListener('storage', onStorage);
+    }, []);
 
     if (loading) {
         return (
             <div className="home-container">
-                <div className="login-content" style={{ margin: 'auto' }}>
-                    <p>Loading...</p>
-                </div>
+                <Loader variant="page" />
             </div>
         );
     }
@@ -383,6 +499,15 @@ function UserAccount({ user, loading, logout }) {
                 toggleExpandedStats={toggleExpandedStats}
                 extendedStats={extendedStats}
                 extendedLoading={extendedLoading}
+            />
+
+            <h3 className="section-title">Your Favorites</h3>
+
+            <FavoritesGrid
+                games={favorites}
+                loading={favoritesLoading}
+                onGameClick={(id) => navigate(`/game/${id}`)}
+                onRemove={removeFavorite}
             />
 
             <h3 className="section-title">Your Steam Library</h3>

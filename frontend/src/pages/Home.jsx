@@ -4,6 +4,7 @@ import { useAuth } from '../context/AuthContext';
 import settings from '../settings';
 import { prefetchGame, prefetchSimilar, prefetchDeals, getCachedDeals, preloadImage, fetchReviewSummaries } from '../utils/prefetch';
 import ReviewBadge from '../components/ReviewBadge';
+import Loader from '../components/Loader';
 import './Store.css';
 
 function Home() {
@@ -392,7 +393,7 @@ function Home() {
                     )}
                     {user && recsLoading && (
                         <section className="store-section-block">
-                            <div className="store-message-card"><p>Loading personalized recommendations...</p></div>
+                            <div className="store-message-card"><Loader variant="cards" count={6} /></div>
                         </section>
                     )}
                     {user && recsError && (
@@ -516,7 +517,7 @@ function Home() {
                             <span className="store-section-caption">From preloaded top games</span>
                         </div>
                         {topGamesLoading ? (
-                            <div className="store-message-card"><p>Loading trending games...</p></div>
+                            <div className="store-message-card"><Loader variant="cards" count={6} /></div>
                         ) : topGames.length === 0 ? (
                             <div className="store-message-card"><p>Top games are unavailable right now.</p></div>
                         ) : (

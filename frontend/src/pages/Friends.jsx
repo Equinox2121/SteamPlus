@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { prefetchGame, prefetchSimilar, preloadImage } from '../utils/prefetch';
+import Loader from '../components/Loader';
 import noAvatar from '../assets/NoAvatar.png';
 import './Friends.css';
 
@@ -52,9 +53,7 @@ function Friends() {
     return (
         <div className="home-container">
             {loading ? (
-                <div className="login-content" style={{ margin: 'auto' }}>
-                    <p>Loading...</p>
-                </div>
+                <Loader variant="page" />
             ) : user ? (
                 <>
                     <div className="header-section">
@@ -63,7 +62,7 @@ function Friends() {
 
                     <div className="section-title">Live Feed</div>
                     {friendsLoading ? (
-                        <p>Loading friend activity...</p>
+                        <Loader variant="cards" count={6} />
                     ) : friendsError ? (
                         <p style={{ color: '#ff4b4b' }}>{friendsError}</p>
                     ) : friends.length === 0 ? (
@@ -110,7 +109,7 @@ function Friends() {
 
                     <div className="section-title">Recent Games Your Friends Played</div>
                     {friendsLoading ? (
-                        <p>Loading recent games...</p>
+                        <Loader variant="cards" count={5} />
                     ) : recentGames.length === 0 ? (
                         <p>No recent games available from your friends.</p>
                     ) : (
