@@ -115,11 +115,13 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const completeSteamProfile = async (username) => {
+    const completeSteamProfile = async (username, pendingToken) => {
         try {
+            const headers = { 'Content-Type': 'application/json' };
+            if (pendingToken) headers.Authorization = `Bearer ${pendingToken}`;
             const res = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/complete-steam-profile`, {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers,
                 body: JSON.stringify({ username }),
                 credentials: 'include'
             });
