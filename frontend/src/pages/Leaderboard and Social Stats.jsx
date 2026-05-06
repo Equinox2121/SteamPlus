@@ -1,4 +1,4 @@
-const BACKEND_URL = ""; // NEEDS TO BE ADDED
+const BACKEND_URL = process.env.BACKEND_URL;
  
 const fetchSteamId = async () => {
   try {
@@ -11,7 +11,7 @@ const fetchSteamId = async () => {
   }
 };
 
-const API_KEY = ""; // NEEDS TO BE ADDED
+const API_KEY = process.env.STEAM_API_KEY;
 
 const fetchSocialStats = async (steamId) => {
   try {

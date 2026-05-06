@@ -25,18 +25,17 @@ if (typeof window !== 'undefined') {
   let captured = null;
   if (window.location.hash) {
     const fromHash = new URLSearchParams(window.location.hash.slice(1));
-    captured = fromHash.get('token') || fromHash.get('pending');
+    captured = fromHash.get('token');
   }
   if (!captured && window.location.search) {
     const fromQuery = new URLSearchParams(window.location.search);
-    captured = fromQuery.get('token') || fromQuery.get('pending');
+    captured = fromQuery.get('token');
   }
   if (captured) {
     localStorage.setItem(TOKEN_KEY, captured);
     const url = new URL(window.location.href);
     url.hash = '';
     url.searchParams.delete('token');
-    url.searchParams.delete('pending');
     history.replaceState(null, '', url.pathname + url.search);
     console.info('[auth] token captured from redirect');
   }

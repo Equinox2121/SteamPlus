@@ -1,21 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/SteamPlus Logo.png';
 import './LoginModal.css';
 
+const PENDING_KEY = 'sp_pending_steam';
+
 const CompleteProfile = () => {
     const { completeSteamProfile } = useAuth();
     const [username, setUsername] = useState('');
     const [error, setError] = useState(null);
+    const [pendingToken, setPendingToken] = useState(() => sessionStorage.getItem(PENDING_KEY) || null);
     const navigate = useNavigate();
+
+    useEffect(() => {
+        const hash = window.location.hash || '';
+        const match = hash.match(/(?:^#|&)pending=([^&]+)/);
+        if (match) {
+            const token = decodeURIComponent(match[1]);
+            sessionStorage.setItem(PENDING_KEY, token);
+            setPendingToken(token);
+            window.history.replaceState(null, '', window.location.pathname + window.location.search);
+        }
+    }, []);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError(null);
 
-        const result = await completeSteamProfile(username);
+        const result = await completeSteamProfile(username, pendingToken);
         if (result.success) {
+            sessionStorage.removeItem(PENDING_KEY);
             navigate('/home');
         } else {
             setError(result.error);
