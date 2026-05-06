@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
+import { FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
 import { useAuth } from '../context/AuthContext';
 import { fetchReviews, submitReview, deleteReview } from '../utils/prefetch';
+import Loader from './Loader';
 
 const formatDate = (iso) => {
     if (!iso) return '';
@@ -84,7 +86,7 @@ function ReviewSection({ appid, onChange }) {
     return (
         <div className="reviews-section">
             <div className="reviews-header">
-                <h2>Site Reviews</h2>
+                <h2>User Reviews</h2>
                 {summary && summary.total > 0 && (
                     <div className="reviews-summary">
                         <span className={`reviews-label ${summary.positivePercent >= 70 ? 'positive' : summary.positivePercent <= 40 ? 'negative' : 'mixed'}`}>
@@ -98,7 +100,7 @@ function ReviewSection({ appid, onChange }) {
             </div>
 
             {loading ? (
-                <div className="reviews-status">Loading reviews...</div>
+                <Loader />
             ) : error ? (
                 <div className="reviews-status reviews-error">{error}</div>
             ) : (
@@ -109,7 +111,9 @@ function ReviewSection({ appid, onChange }) {
                                 <>
                                     <div className="reviews-form-header">
                                         <div className={`reviews-verdict ${mine.recommended ? 'positive' : 'negative'}`}>
-                                            {mine.recommended ? 'You Recommend This' : 'You Do Not Recommend'}
+                                            {mine.recommended
+                                                ? <><FaThumbsUp aria-hidden="true" style={{ marginRight: 6, verticalAlign: '-2px' }} />You Recommend This</>
+                                                : <><FaThumbsDown aria-hidden="true" style={{ marginRight: 6, verticalAlign: '-2px' }} />You Do Not Recommend</>}
                                         </div>
                                         <div className="reviews-form-actions">
                                             <button className="reviews-btn-secondary" onClick={() => setEditing(true)}>Edit</button>
@@ -127,14 +131,16 @@ function ReviewSection({ appid, onChange }) {
                                             className={`reviews-toggle-btn ${draftRecommend ? 'active positive' : ''}`}
                                             onClick={() => setDraftRecommend(true)}
                                         >
-                                            👍 Recommended
+                                            <FaThumbsUp aria-hidden="true" style={{ marginRight: 6, verticalAlign: '-2px' }} />
+                                            Recommended
                                         </button>
                                         <button
                                             type="button"
                                             className={`reviews-toggle-btn ${!draftRecommend ? 'active negative' : ''}`}
                                             onClick={() => setDraftRecommend(false)}
                                         >
-                                            👎 Not Recommended
+                                            <FaThumbsDown aria-hidden="true" style={{ marginRight: 6, verticalAlign: '-2px' }} />
+                                            Not Recommended
                                         </button>
                                     </div>
                                     <textarea
@@ -176,7 +182,9 @@ function ReviewSection({ appid, onChange }) {
                                     <div className="review-card-header">
                                         <span className="review-author">{r.user.username}</span>
                                         <span className={`reviews-verdict-pill ${r.recommended ? 'positive' : 'negative'}`}>
-                                            {r.recommended ? 'Recommended' : 'Not Recommended'}
+                                            {r.recommended
+                                                ? <><FaThumbsUp aria-hidden="true" style={{ marginRight: 4, verticalAlign: '-1px' }} />Recommended</>
+                                                : <><FaThumbsDown aria-hidden="true" style={{ marginRight: 4, verticalAlign: '-1px' }} />Not Recommended</>}
                                         </span>
                                         <span className="reviews-meta">{formatDate(r.updatedAt)}</span>
                                     </div>

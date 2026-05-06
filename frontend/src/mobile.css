@@ -1,0 +1,258 @@
+@media (max-width: 900px) {
+    html, body {
+        overflow-x: hidden;
+    }
+
+    .navbar {
+        height: auto;
+        min-height: 64px;
+        padding: 8px 0;
+    }
+    .navbar-content {
+        flex-wrap: wrap;
+        gap: 8px;
+        padding: 0 12px;
+    }
+    .navbar-left {
+        gap: 16px;
+        flex: 1 1 100%;
+        flex-wrap: wrap;
+        order: 1;
+    }
+    .navbar-right {
+        order: 2;
+        margin-left: auto;
+    }
+    .navbar-logo span {
+        font-size: 18px;
+        letter-spacing: 1px;
+    }
+    .navbar-logo img {
+        height: 32px;
+    }
+    .navbar-links {
+        gap: 14px;
+        font-size: 12px;
+        flex: 1 1 100%;
+        order: 1;
+        overflow-x: auto;
+        overflow-y: hidden;
+        white-space: nowrap;
+        padding-bottom: 4px;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .navbar-links::-webkit-scrollbar {
+        display: none;
+    }
+    .navbar-search {
+        flex: 1 1 100%;
+        order: 3;
+    }
+    .navbar-search-input {
+        width: 100%;
+        box-sizing: border-box;
+    }
+    .navbar-search-dropdown {
+        width: 100%;
+    }
+
+    .home-container {
+        padding: 16px 12px;
+    }
+
+    .header-section {
+        padding: 14px;
+        gap: 12px;
+        margin-bottom: 16px;
+    }
+    .header-section h2 {
+        font-size: 1.1em;
+        letter-spacing: 1px;
+    }
+    .avatar-img {
+        width: 52px;
+        height: 52px;
+    }
+
+    .game-page-container {
+        padding: 12px 14px;
+    }
+    .game-main-info {
+        flex-direction: column;
+    }
+    .game-image-gallery,
+    .game-sidebar {
+        flex: 1 1 auto;
+        width: 100%;
+    }
+    .game-page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    .game-page-header h1 {
+        font-size: 1.6em;
+    }
+    .game-tabs {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    .game-tab {
+        flex: 1 1 auto;
+        min-width: 0;
+        font-size: 12px;
+        padding: 8px 10px;
+    }
+    .screenshots-grid {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .stats-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .expanded-row {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+    .dash-stat {
+        flex: 1 1 calc(50% - 4px);
+        padding: 8px;
+    }
+    .dash-stat.border-left,
+    .border-left {
+        border-left: none;
+    }
+    .dash-stat .value {
+        font-size: 1.2em;
+    }
+
+    .reviews-form-card,
+    .reviews-section {
+        padding: 12px;
+    }
+    .reviews-form-header {
+        flex-wrap: wrap;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 600px) {
+    .navbar-logo span {
+        display: none;
+    }
+    .navbar-logo img {
+        height: 28px;
+    }
+    .navbar-links {
+        gap: 10px;
+        font-size: 11px;
+    }
+    .nav-login-btn {
+        padding: 4px 10px;
+        font-size: 10px;
+    }
+    .profile-avatar {
+        width: 28px;
+        height: 28px;
+    }
+    .profile-name {
+        display: none;
+    }
+
+    .home-container {
+        padding: 10px 8px;
+    }
+    .game-page-container {
+        padding: 10px 8px;
+    }
+
+    h1 {
+        font-size: 2em;
+        line-height: 1.15;
+    }
+    h2 {
+        font-size: 1.1em;
+    }
+
+    .header-section {
+        flex-direction: column;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .library-container {
+        gap: 12px;
+    }
+    .screenshots-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .reviews-toggle {
+        flex-direction: column;
+        gap: 8px;
+    }
+    .reviews-toggle-btn {
+        width: 100%;
+    }
+
+    .deals-widget {
+        padding: 12px;
+    }
+    .deals-summary-row {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 8px;
+    }
+    .deals-edition-tabs {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+
+    .modal-content,
+    .login-modal {
+        max-width: calc(100vw - 24px);
+        width: calc(100vw - 24px);
+    }
+    .stats-modal {
+        max-width: calc(100vw - 16px);
+        width: calc(100vw - 16px);
+        max-height: calc(100vh - 32px);
+        overflow-y: auto;
+    }
+
+    .game-tab-content {
+        padding: 0;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: 1fr 1fr !important;
+    }
+
+    .game-meta-list {
+        font-size: 0.92em;
+    }
+}
+
+@media (max-width: 380px) {
+    .navbar-links {
+        gap: 8px;
+    }
+    .navbar-link {
+        font-size: 10px;
+        padding: 4px 0;
+    }
+    .nav-login-btn {
+        padding: 3px 8px;
+        font-size: 9px;
+    }
+
+    .dash-stat {
+        flex: 1 1 100%;
+    }
+
+    .recommendations-grid {
+        grid-template-columns: 1fr !important;
+    }
+}

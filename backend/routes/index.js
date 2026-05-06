@@ -1139,6 +1139,105 @@ router.get("/steam/game-stats/:appid", authMiddleware, async (req, res) => {
     }
 });
 
+router.get("/steam/friends-leaderboard", async (req, res) => {
+    const token = getTokenFromRequest(req);
+    let user = token ? verifyToken(token) : null;
+    if (!user && req.user) user = req.user;
+    if (!user) return res.status(401).json({ error: "no auth" });
+
+    let steamId = user.steamid || (user._json && (user._json.steamid || user._json.steamid64)) || user.id;
+    if (steamId && typeof steamId === 'string' && steamId.includes('https://steamcommunity.com/openid/id/')) {
+        steamId = steamId.split('https://steamcommunity.com/openid/id/')[1];
+    }
+    const isActuallySteamId = steamId && typeof steamId === 'string' && steamId.length >= 15 && /^\d+$/.test(steamId);
+    if (!isActuallySteamId) return res.status(400).json({ error: "steamid not found or invalid" });
+    if (!STEAM_API_KEY) return res.status(500).json({ error: "Steam API key not configured" });
+
+    try {
+        const friendsUrl = `https://api.steampowered.com/ISteamUser/GetFriendList/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&relationship=friend`;
+        const friendsResp = await fetchSteamJson(friendsUrl);
+        const friendIds = (friendsResp.statusCode === 200 && friendsResp.data.friendslist?.friends)
+            ? friendsResp.data.friendslist.friends.map((f) => f.steamid).filter(Boolean).slice(0, 25)
+            : [];
+
+        const allIds = [steamId, ...friendIds.filter((id) => id !== steamId)];
+
+        const summariesUrl = `https://api.steampowered.com/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${allIds.join(',')}`;
+        const summariesResp = await fetchSteamJson(summariesUrl);
+        const players = summariesResp.data.response?.players || [];
+
+        const fetchPlayerStats = async (sid) => {
+            const levelUrl = `https://api.steampowered.com/IPlayerService/GetSteamLevel/v1/?key=${STEAM_API_KEY}&steamid=${sid}`;
+            const ownedUrl = `https://api.steampowered.com/IPlayerService/GetOwnedGames/v0001/?key=${STEAM_API_KEY}&steamid=${sid}&include_played_free_games=1`;
+            const recentUrl = `https://api.steampowered.com/IPlayerService/GetRecentlyPlayedGames/v0001/?key=${STEAM_API_KEY}&steamid=${sid}`;
+            const [lv, ow, rc] = await Promise.allSettled([
+                fetchSteamJson(levelUrl),
+                fetchSteamJson(ownedUrl),
+                fetchSteamJson(recentUrl),
+            ]);
+            const level = lv.status === 'fulfilled' ? (lv.value.data?.response?.player_level || 0) : 0;
+            const ownedCount = ow.status === 'fulfilled' ? (ow.value.data?.response?.game_count || 0) : 0;
+            const recentGames = rc.status === 'fulfilled' ? (rc.value.data?.response?.games || []) : [];
+            const recentMinutes = recentGames.reduce((acc, g) => acc + (g.playtime_2weeks || 0), 0);
+            const topRecent = recentGames.slice().sort((a, b) => (b.playtime_2weeks || 0) - (a.playtime_2weeks || 0))[0] || null;
+            return {
+                steamLevel: level,
+                ownedCount,
+                recentHours: Math.round(recentMinutes / 60),
+                topRecent: topRecent ? {
+                    appid: topRecent.appid,
+                    name: topRecent.name,
+                    hours: Math.round((topRecent.playtime_2weeks || 0) / 60),
+                } : null,
+            };
+        };
+
+        const stats = await Promise.all(allIds.map(async (sid) => {
+            const player = players.find((p) => p.steamid === sid) || {};
+            const isPrivate = player.communityvisibilitystate ? player.communityvisibilitystate < 3 : false;
+            try {
+                const s = await fetchPlayerStats(sid);
+                return {
+                    steamid: sid,
+                    isSelf: sid === steamId,
+                    username: player.personaname || (sid === steamId ? 'You' : 'Steam Friend'),
+                    avatar: player.avatarfull || player.avatarmedium || player.avatar || null,
+                    profileUrl: player.profileurl || null,
+                    private: isPrivate,
+                    ...s,
+                };
+            } catch {
+                return {
+                    steamid: sid,
+                    isSelf: sid === steamId,
+                    username: player.personaname || 'Steam Friend',
+                    avatar: player.avatarfull || player.avatarmedium || player.avatar || null,
+                    private: true,
+                    steamLevel: 0,
+                    ownedCount: 0,
+                    recentHours: 0,
+                    topRecent: null,
+                };
+            }
+        }));
+
+        const rank = (key) => stats.slice().sort((a, b) => (b[key] || 0) - (a[key] || 0));
+
+        res.json({
+            you: stats.find((s) => s.isSelf) || null,
+            participantCount: stats.length,
+            leaderboards: {
+                recentHours: rank('recentHours'),
+                steamLevel: rank('steamLevel'),
+                ownedCount: rank('ownedCount'),
+            },
+        });
+    } catch (error) {
+        console.error("friends leaderboard error", error);
+        res.status(500).json({ error: "Failed to load leaderboard" });
+    }
+});
+
 router.get("/", (req, res) => {
     res.redirect(`${pickFrontend(req)}/home`);
 });

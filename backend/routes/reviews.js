@@ -207,7 +207,7 @@ router.delete("/:appid", authMiddleware, async (req, res) => {
 });
 
 function summaryLabel(total, positivePercent) {
-    if (!total) return "No site reviews yet";
+    if (!total) return "No user reviews yet";
     if (positivePercent >= 95 && total >= 50) return "Overwhelmingly Positive";
     if (positivePercent >= 80) return "Very Positive";
     if (positivePercent >= 70) return "Mostly Positive";

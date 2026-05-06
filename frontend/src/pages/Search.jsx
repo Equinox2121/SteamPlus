@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { searchSteam, prefetchGame, prefetchSimilar, prefetchDeals, preloadImage, fetchReviewSummaries } from '../utils/prefetch';
 import ReviewBadge from '../components/ReviewBadge';
+import Loader from '../components/Loader';
 import './Search.css';
 import '../pages/Store.css';
 
@@ -79,7 +80,7 @@ function Search() {
                 <button type="submit" className="search-page-btn">Search</button>
             </form>
 
-            {loading && <div className="search-status">Searching...</div>}
+            {loading && <div className="search-status"><Loader variant="cards" count={6} /></div>}
             {error && <div className="search-status search-error">{error}</div>}
 
             {!loading && !error && initialQuery && results.length === 0 && (

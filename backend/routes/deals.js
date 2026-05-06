@@ -1,11 +1,11 @@
 const express = require("express");
-const aks = require("../services/allKeyShop");
+const aks = require("../services/isThereAnyDeal");
 const warmer = require("../services/dealsWarmer");
 
 const router = express.Router();
 
 router.get("/health", (req, res) => {
-    res.json({ provider: "allkeyshop", ...aks.stats() });
+    res.json({ provider: "isthereanydeal", ...aks.stats() });
 });
 
 router.get("/by-steam-app-ids", async (req, res) => {

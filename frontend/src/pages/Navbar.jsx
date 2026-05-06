@@ -4,6 +4,7 @@ import logo from '../assets/SteamPlus Logo.png';
 import noAvatar from '../assets/NoAvatar.png';
 import { useAuth } from '../context/AuthContext';
 import { searchSteam, prefetchGame, prefetchDeals, preloadImage } from '../utils/prefetch';
+import Loader from '../components/Loader';
 import './Navbar.css';
 import './Search.css';
 import LoginModal from './LoginModal';
@@ -40,6 +41,7 @@ const Navbar = () => {
             case '/profile': import('./Profile'); break;
             case '/support': import('./Support'); break;
             case '/search': import('./Search'); break;
+            case '/community': import('./Community'); break;
             default: break;
         }
     };
@@ -149,8 +151,15 @@ const Navbar = () => {
                         >
                             Friends
                         </a>
-                        <a href="#" className="navbar-link">Community</a>
-                        <a href="#" className="navbar-link">About</a>
+                        <a
+                            href="#"
+                            className={`navbar-link ${location.pathname === '/community' ? 'active' : ''}`}
+                            onClick={(e) => { e.preventDefault(); navigate('/community'); }}
+                            onMouseEnter={() => prefetchRoute('/community')}
+                            onFocus={() => prefetchRoute('/community')}
+                        >
+                            Community
+                        </a>
                         <a
                             href="#"
                             className={`navbar-link ${location.pathname === '/support' ? 'active' : ''}`}
@@ -176,7 +185,7 @@ const Navbar = () => {
                         {searchOpen && searchQuery.trim().length >= 2 && (
                             <div className="navbar-search-dropdown" role="listbox">
                                 {searchResults.length === 0 ? (
-                                    <div className="navbar-search-empty">Searching...</div>
+                                    <div className="navbar-search-empty"><Loader variant="inline" label="Searching" /></div>
                                 ) : (
                                     <>
                                         {searchResults.map((g, idx) => (

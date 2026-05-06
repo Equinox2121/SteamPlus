@@ -1,5 +1,5 @@
 const pool = require("../config/database");
-const aks = require("./allKeyShop");
+const aks = require("./isThereAnyDeal");
 
 const REFRESH_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const WARM_LIMIT = 30;
